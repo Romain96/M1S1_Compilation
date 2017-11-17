@@ -3,8 +3,8 @@
 # juste un petit makefile pour tester l'analyse lexicale seule
 
 # génère un code d'analyse lexical en utilisant (f)lex
-all: analyse_lexicale.l
-	lex analyse_lexicale.l
+all: lexical_analysis.l
+	lex -v lexical_analysis.l
 	gcc -o test lex.yy.c -ll
 
 # nettoie le dossier de travail
