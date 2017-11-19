@@ -90,7 +90,7 @@ identifier [a-z_][a-zA-Z_]*
 
 {identifier} 			{printf("identifier "); return IDENTIFIER;}
 
-[ /n/t] 			{}
+[ \n\t\r] 			{}
 
 . 				{printf("unrecognized character (%c)!\n", yytext[0]);}
 
