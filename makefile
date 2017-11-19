@@ -1,12 +1,9 @@
-# Makefile pour le lex
-# Auteur : Romain PERRIN
-# juste un petit makefile pour tester l'analyse lexicale seule
-
 # génère un code d'analyse lexical en utilisant (f)lex
-all: lexical_analysis.l
-	lex -v lexical_analysis.l
-	gcc -o test lex.yy.c -ll
+all: stenc.l stenc.y
+	yacc -d stenc.y
+	lex stenc.l
+	gcc -o stenc y.tab.c y.tab.h lex.yy.c -ly -ll
 
-# nettoie le dossier de travail
+# nettoie le dossier de travail (supprime les fichier générés ppar Lex et l'exécutable)
 clean:
-	rm lex.yy.c test
+	rm *.o y.tab.c y.tab.h lex.yy.c stenc
