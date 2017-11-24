@@ -4,12 +4,12 @@
 #include "symbol_table.h"
 #include "quad.h"
 
-// génère un nouveau quad
+// gÃ©nÃ¨re un nouveau quad
 struct quad *quad_gen(struct quad **quad_list, enum quad_operator op, struct symbol *arg1, struct symbol *arg2, struct symbol *res)
 {
 	static int quad_number = 0;
 
-	// 1er élément de la liste
+	// 1er Ã©lÃ©ment de la liste
 	if (*quad_list == NULL)
 	{
 		*quad_list = malloc(sizeof(struct quad));
@@ -40,29 +40,28 @@ struct quad *quad_gen(struct quad **quad_list, enum quad_operator op, struct sym
 	}
 }
 
-// concatène deux listes de quads
-struct quad *quad_add(struct quad *quad_list1, struct quad *quad_list2)
+// concatÃ¨ne deux listes de quads
+struct quad *quad_concat(struct quad *l1, struct quad *l2)
 {
-	// crée une nouvelle liste
-	struct quad *concat = NULL;
+	// si les deux listes sont vide on retourne une liste vide
+	if (l1 == NULL && l2 == NULL)
+		return NULL;
 
-	// ajout des quads de la liste 1
-	struct quad *iterator = quad_list1;
+	// si l1 est vide on retourne l2
+	if (l1 == NULL)
+		return l2;
+
+	// si l2 est vide on retourne l1
+	if (l2 == NULL)
+		return l1;
+
+	// sinon on parcours l1 jusqu'Ã  la fin et on ajoute un lien vers l2
+	struct quad *iterator = l1;
 	while (iterator->next != NULL)
-	{
-		quad_gen(&concat, iterator->op, iterator->arg1, iterator->arg2, iterator->res);
 		iterator = iterator->next;
-	}
-
-	// ajout des quads de la liste 2
-	iterator = quad_list2;
-	while (iterator->next != NULL)
-	{
-		quad_gen(&concat, iterator->op, iterator->arg1, iterator->arg2, iterator->res);
-		iterator = iterator->next;
-	}
-
-	return concat;
+	iterator->next = l2;
+	// et on retourne l1 qui dsormais contient l1 + l2
+	return l1;
 }
 
 // affiche la liste de quads
@@ -75,7 +74,7 @@ void quad_print(struct quad *quad_list)
 	{
 		printf("id : %5d, operator : ", quad_list->id);
 
-		// affichage de l'opérateur
+		// affichage de l'opï¿½rateur
 		switch (quad_list->op)
 		{
 			case QUAD_PLUS:
