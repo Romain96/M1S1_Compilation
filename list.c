@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdbool.h>
 #include "symbol_table.h"
 #include "quad.h"
 #include "list.h"
@@ -37,4 +38,17 @@ struct list *list_concat(struct list *l1, struct list *l2)
         iterator->next = l2;
         // et on retourne l1 qui désormais contient l1 et l2
         return l1;
+}
+
+// complète tous les quads de la liste comportant un goto avec le label indiqué
+void list_complete(struct list *l, int label)
+{
+        // parcours de la liste
+        struct list *iterator = l;
+        while(iterator != NULL)
+        {
+                if (iterator->current_quad->contain_goto)
+                        iterator->current_quad->goto_quad = label;
+                iterator = iterator->next;
+        }
 }

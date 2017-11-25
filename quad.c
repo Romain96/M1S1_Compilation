@@ -1,11 +1,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include "symbol_table.h"
 #include "quad.h"
 
 // génère un nouveau quad
-struct quad *quad_gen(struct quad **quad_list, enum quad_operator op, struct symbol *arg1, struct symbol *arg2, struct symbol *res)
+struct quad *quad_gen(struct quad **quad_list, enum quad_operator op, struct symbol *arg1, struct symbol *arg2, struct symbol *res, bool contain_goto, int goto_quad)
 {
 	static int quad_number = 0;
 
@@ -18,6 +19,8 @@ struct quad *quad_gen(struct quad **quad_list, enum quad_operator op, struct sym
 		(*quad_list)->arg1 = arg1;
 		(*quad_list)->arg2 = arg2;
 		(*quad_list)->res = res;
+		(*quad_list)->contain_goto = contain_goto;
+		(*quad_list)->goto_quad = goto_quad;
 		(*quad_list)->next = NULL;
 		quad_number++;
 		return *quad_list;
@@ -31,6 +34,8 @@ struct quad *quad_gen(struct quad **quad_list, enum quad_operator op, struct sym
 		new_quad->arg1 = arg1;
 		new_quad->arg2 = arg2;
 		new_quad->res = res;
+		new_quad->contain_goto = contain_goto;
+		new_quad->goto_quad = goto_quad;
 		new_quad->next = NULL;
 		quad_number++;
 
@@ -71,9 +76,9 @@ struct quad *quad_concat(struct quad *l1, struct quad *l2)
 // affiche la liste de quads
 void quad_print(struct quad *quad_list)
 {
-	printf("/////////////////////////////////////////////////\n");
-	printf("////////////////// Quad list ////////////////////\n");
-	printf("/////////////////////////////////////////////////\n");
+	printf("//////////////////////////////////////////////////////////////////////////////\n");
+	printf("////////////////////////////////// Quad list /////////////////////////////////\n");
+	printf("//////////////////////////////////////////////////////////////////////////////\n");
 	while (quad_list != NULL)
 	{
 		printf("id : %5d, operator : ", quad_list->id);
@@ -81,6 +86,8 @@ void quad_print(struct quad *quad_list)
 		// affichage de l'opérateur
 		switch (quad_list->op)
 		{
+			case QUAD_NO_OP:
+				printf("N/A, "); break;
 			case QUAD_PLUS:
 				printf("+, "); break;
 			case QUAD_MINUS:
@@ -122,9 +129,15 @@ void quad_print(struct quad *quad_list)
 			printf("arg2 : %p, ", quad_list->arg2);
 
 		if (quad_list->res == NULL)
-			printf("result : NULL\n");
+			printf("result : NULL");
 		else
-			printf("result : %p\n", quad_list->res);
+			printf("result : %p", quad_list->res);
+
+		// affiche le goto s'il y en a un
+		if (quad_list->contain_goto)
+			printf(", goto : %d\n", quad_list->goto_quad);
+		else
+			printf("\n");
 
 		quad_list = quad_list->next;
 	}
