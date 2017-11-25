@@ -25,15 +25,14 @@ le StenC [Sten-Ci] est un sous ensemble du C auquel on a ajouté un type stencil
 - toutes les variables sont locales et statiques
 - les fonctions peuvent être supportées et peuvent être récursives
 
-## Milestones *en construction
+## Milestones [en construction]
 
-|------------|-------------------|
 |    DATE    |    DESCRIPTION    |
 |------------|-------------------|
 | 2017-10-05 | Début du projet   | 
 |     ?      |        ?          |
 
-## Spécification complète du compilateur *à venir
+## Spécification complète du compilateur [à venir]
 
 Cette section décrit la spécification complète de nôtre compilateur c'est-à-dire tout ce qu'il est capable de 
 reconnaître et de produire en terme de code assembleur.
