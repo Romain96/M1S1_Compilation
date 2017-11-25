@@ -118,7 +118,6 @@ condition:
                                 new_quad1 = quad_gen(&quad_list, QUAD_LE, id1, id2, NULL, true, -1);
                                 break;
                         default:
-                                printf("dafuq man\n");
                                 break;
                 }
                 // goto inconditionnel
