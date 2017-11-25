@@ -19,10 +19,10 @@ Auteurs :
 le StenC [Sten-Ci] est un sous ensemble du C auquel on a ajouté un type stencil et un opérateur d'application de stencil.
 
 - le seul type de base est "int" (et ses tableaux multidimensionnels)
-- les structures de contrôle if, then, else, for et while
+- les structures de contrôle if, else, for et while
 - les opérateurs +, -, ++, --, /, *
 - le nouveau type stencil et son opérateur d'application "$"
-- toutes les variables sont locales et statique
+- toutes les variables sont locales et statiques
 - les fonctions peuvent être supportées et peuvent être récursives
 
 ## Milestones
