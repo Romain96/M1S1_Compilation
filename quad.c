@@ -24,19 +24,23 @@ struct quad *quad_gen(struct quad **quad_list, enum quad_operator op, struct sym
 	}
 	else
 	{
+		// allocation d'un nouveau quad
+		struct quad *new_quad = malloc(sizeof(struct quad));
+		new_quad->id = quad_number;
+		new_quad->op = op;
+		new_quad->arg1 = arg1;
+		new_quad->arg2 = arg2;
+		new_quad->res = res;
+		new_quad->next = NULL;
+		quad_number++;
+
 		// recherche du dernier quad
 		struct quad *scan = *quad_list;
 		while (scan->next != NULL)
 			scan = scan->next;
-		scan->next = malloc(sizeof(struct quad));
-		scan->next->id = quad_number;
-		scan->next->op = op;
-		scan->next->arg1 = arg1;
-		scan->next->arg2 = arg2;
-		scan->next->res = res;
-		scan->next->next = NULL;
-		quad_number++;
-		return (*quad_list)->next;
+
+		scan->next = new_quad;
+		return scan->next;
 	}
 }
 
@@ -60,7 +64,7 @@ struct quad *quad_concat(struct quad *l1, struct quad *l2)
 	while (iterator->next != NULL)
 		iterator = iterator->next;
 	iterator->next = l2;
-	// et on retourne l1 qui dsormais contient l1 + l2
+	// et on retourne l1 qui désormais contient l1 + l2
 	return l1;
 }
 
@@ -68,13 +72,13 @@ struct quad *quad_concat(struct quad *l1, struct quad *l2)
 void quad_print(struct quad *quad_list)
 {
 	printf("/////////////////////////////////////////////////\n");
-	printf("////////////////// Quads list ///////////////////\n");
+	printf("////////////////// Quad list ////////////////////\n");
 	printf("/////////////////////////////////////////////////\n");
 	while (quad_list != NULL)
 	{
 		printf("id : %5d, operator : ", quad_list->id);
 
-		// affichage de l'op�rateur
+		// affichage de l'opérateur
 		switch (quad_list->op)
 		{
 			case QUAD_PLUS:

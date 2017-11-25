@@ -19,7 +19,7 @@ struct symbol *symbol_alloc()
 // Ajoute le symbole dans la table
 struct symbol *symbol_add(struct symbol **table, char *name)
 {
-	// 1er élément de la table (si la table est vide)
+	// 1er Ã©lÃ©ment de la table (si la table est vide)
 	if (*table == NULL)
 	{
 		*table = symbol_alloc();
@@ -29,7 +29,7 @@ struct symbol *symbol_add(struct symbol **table, char *name)
 	else
 	{
 		struct symbol *scan = *table;
-		// parcours de la liste chaînée jusqu'à la fin
+		// parcours de la liste chainÃ©e jusqu'Ã  la fin
 		while (scan->next != NULL)
 			scan = scan->next;
 		scan->next = symbol_alloc();
@@ -38,12 +38,12 @@ struct symbol *symbol_add(struct symbol **table, char *name)
 	}
 }
 
-// Crée un nouveau temporaire (utilise symbol_add)
+// CrÃ©e un nouveau temporaire (utilise symbol_add)
 struct symbol *symbol_new_temp(struct symbol **table)
 {
 	static int temporary_number = 0;
 	char temporary_name[SYMBOL_MAX_STRING];
-	snprintf(temporary_name, SYMBOL_MAX_STRING, "temp_%d", temporary_number);
+	snprintf(temporary_name, SYMBOL_MAX_STRING, "temp%d", temporary_number);
 	temporary_number++;
 	return symbol_add(table, temporary_name);
 }
@@ -53,12 +53,12 @@ struct symbol *symbol_lookup(struct symbol *table, char *name)
 {
 	while (table != NULL)
 	{
-		// trouvé -> on retourne le symbole correspondant
+		// trouvï¿½ -> on retourne le symbole correspondant
 		if (strcmp(table->identifier, name) == 0)
 			return table;
 		table = table->next;
 	}
-	// non trouvé
+	// non trouvï¿½
 	return NULL;
 }
 
