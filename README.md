@@ -6,8 +6,8 @@ Ce projet est réalisé dans le cadre de l'UE "Compilation".
 L'objectif est de réaliser une traduction depuis le code de haut niveau de StenC vers un code assembleur MIPS.
 
 Les outils utilisés sont :
-- (f)lex pour générer le programme d'analyse lexicale
-- Yacc pour générer le programme d'analyse syntaxique
+- (f)lex : pour générer l'analyseeur lexical à partir de la specification des tokens
+- Yacc : pour générer l'analyseur syntaxique à partir de la specification de grammaire
 - R2000 SPIM : pour simuler l'exécution du code assembleur MIPS généré
 
 Auteurs :
@@ -27,4 +27,8 @@ le StenC [Sten-Ci] est un sous ensemble du C auquel on a ajouté un type stencil
 
 ## Milestones
 
-en construction
+|------------|-------------------|
+|    DATE    |    DESCRIPTION    |
+|------------|-------------------|
+| 2017-10-05 | Début du projet   | 
+|     ?      |        ?          |
