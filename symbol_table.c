@@ -53,13 +53,29 @@ struct symbol *symbol_lookup(struct symbol *table, char *name)
 {
 	while (table != NULL)
 	{
-		// trouv� -> on retourne le symbole correspondant
+		// trouvé -> on retourne le symbole correspondant
 		if (strcmp(table->identifier, name) == 0)
 			return table;
 		table = table->next;
 	}
-	// non trouv�
+	// non trouvé
 	return NULL;
+}
+
+// libère la mémoire allouée pour la table des symboles
+void symbol_free(struct symbol **symbol)
+{
+	struct symbol *iterator = *symbol;
+	struct symbol *symbol_to_free = *symbol;
+
+	// parcours de tous les symboles
+	while (iterator != NULL)
+	{
+		iterator = iterator->next;
+		free(symbol_to_free->identifier);
+		free(symbol_to_free);
+		symbol_to_free = iterator;
+	}
 }
 
 // Affiche la table des symboles

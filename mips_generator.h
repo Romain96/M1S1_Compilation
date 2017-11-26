@@ -1,0 +1,40 @@
+#ifndef __MIPS_GENERATOR_H__
+#define __MIPS_GENERATOR_H__
+
+#include <stdio.h>
+#include "symbol_table.h"
+#include "quad.h"
+
+#define MIPS_MAX_LINE_SIZE 256
+
+struct mips_generator
+{
+        FILE *output_file;
+        struct symbol *symbol_table;
+        struct quad *quad_list;
+};
+
+// Les fonctions décrites ici permettent de transformer la liste de quads en code assembleur MIPS
+struct mips_generator *mips_setup(char *, struct symbol *, struct quad *);
+void mips_generate_assembly_code(struct mips_generator *);
+void mips_terminate(struct mips_generator *);
+
+// écriture de la table des symboles en segment .data
+void __mips_write_symbol_table(struct mips_generator *);
+// écriture des instructions en segment .text
+void __mips_write_quad_list(struct mips_generator *);
+
+// génération d'une affectation
+void __mips_generate_assignment(struct mips_generator *, struct quad *);
+
+// fonctions de génération d'expressions arithmétiques
+void __mips_generate_addition(struct mips_generator *, struct quad *);
+void __mips_generate_substraction(struct mips_generator *, struct quad*);
+void __mips_generate_multiplication(struct mips_generator *, struct quad *);
+void __mips_generate_division(struct mips_generator *, struct quad *);
+
+// TODO conditions booléennes
+// TODO structures de contrôle
+// TODO fonctions (+récursives)
+
+#endif

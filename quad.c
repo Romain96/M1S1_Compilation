@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include "symbol_table.h"
 #include "quad.h"
 
@@ -73,12 +72,25 @@ struct quad *quad_concat(struct quad *l1, struct quad *l2)
 	return l1;
 }
 
+// libère la mémoire allouée par la liste de quads
+void quad_free(struct quad **ql)
+{
+	struct quad *iterator = *ql;
+	struct quad *quad_to_free = *ql;
+	while (iterator != NULL)
+	{
+		iterator = iterator->next;
+		free(quad_to_free);
+		quad_to_free = iterator;
+	}
+}
+
 // affiche la liste de quads
 void quad_print(struct quad *quad_list)
 {
-	printf("//////////////////////////////////////////////////////////////////////////////\n");
-	printf("////////////////////////////////// Quad list /////////////////////////////////\n");
-	printf("//////////////////////////////////////////////////////////////////////////////\n");
+	printf("/////////////////////////////////////////////////////////////////////////////////////////////\n");
+	printf("///////////////////////////////////////// Quad list /////////////////////////////////////////\n");
+	printf("/////////////////////////////////////////////////////////////////////////////////////////////\n");
 	while (quad_list != NULL)
 	{
 		printf("id : %5d, operator : ", quad_list->id);
@@ -134,7 +146,7 @@ void quad_print(struct quad *quad_list)
 			printf("result : %p", quad_list->res);
 
 		// affiche le goto s'il y en a un
-		if (quad_list->contain_goto)
+		if (quad_list->contain_goto == true)
 			printf(", goto : %d\n", quad_list->goto_quad);
 		else
 			printf("\n");

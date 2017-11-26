@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-// structure de table des symboles sous forme de liste chaînée
+// structure de table des symboles sous forme de liste chaï¿½nï¿½e
 struct symbol 
 {
 	char *identifier;
@@ -17,6 +17,7 @@ struct symbol *symbol_alloc();
 struct symbol *symbol_new_temp(struct symbol **);
 struct symbol *symbol_lookup(struct symbol *, char *);
 struct symbol *symbol_add(struct symbol **, char *);
+void symbol_free(struct symbol **);
 void symbol_print(struct symbol *);
 
 #endif
