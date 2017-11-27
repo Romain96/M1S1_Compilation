@@ -94,7 +94,7 @@ void __mips_write_symbol_table(struct mips_generator *mips)
 {
         // génération du segment .data
         char data_segment[] = ".data\n";
-        fwrite(&data_segment, sizeof(char), strlen(data_segment) + 1, mips->output_file);
+        fwrite(&data_segment, sizeof(char), strlen(data_segment), mips->output_file);
 
         // parcours de la table des symboles
         struct symbol *iterator = mips->symbol_table;
@@ -102,7 +102,7 @@ void __mips_write_symbol_table(struct mips_generator *mips)
         {                   
                 char line_to_write[MIPS_MAX_LINE_SIZE];
                 snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "%s: .word %d\n", iterator->identifier, iterator->value);
-                fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+                fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
                 iterator = iterator->next;
         }
@@ -119,11 +119,11 @@ void __mips_write_quad_list(struct mips_generator *mips)
 {
         // génération du segent .text
         char text_segment[] = ".text\n";
-        fwrite(&text_segment, sizeof(char), strlen(text_segment) + 1, mips->output_file);
+        fwrite(&text_segment, sizeof(char), strlen(text_segment), mips->output_file);
 
         // TODO prendre en compte le main mieux que ça...
         char main_routine[] = "main:\n";
-        fwrite(&main_routine, sizeof(char), strlen(main_routine) + 1, mips->output_file);
+        fwrite(&main_routine, sizeof(char), strlen(main_routine), mips->output_file);
 
         // parcours de la liste des quads
         struct quad *iterator = mips->quad_list;
@@ -189,7 +189,7 @@ void __mips_write_quad_list(struct mips_generator *mips)
 
         // termine le programme en appellant le syscall de terminaison
         char prgramm_end[] = "li $v0, 10\nsyscall\n";
-        fwrite(&prgramm_end, sizeof(char), strlen(prgramm_end) + 1, mips->output_file);
+        fwrite(&prgramm_end, sizeof(char), strlen(prgramm_end), mips->output_file);
 
         printf("quad list written successfully :)\n");
 }
@@ -220,19 +220,19 @@ void __mips_generate_addition(struct mips_generator *mips, struct quad *q)
         // 1) charger la valeur de l'opérande 1 dans le registre t1 (lw $t1, op1)
         char line_to_write[MIPS_MAX_LINE_SIZE];
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 2) charger la valeur de l'opérande 2 dans le registre t2 (lw $t2, op2)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->arg2->identifier);
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 3) calculer la somme et placer le résultat dans un registre temporaire (add $t0, $t1, $t2)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "add $t0, $t1, $t2\n");
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 4) placer la valeur de la somme du registre vers la ram (sw $t0, res)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw $t0, %s\n", q->res->identifier);
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 }
 
 // Fonction             : __mips_generate_substraction
@@ -247,19 +247,19 @@ void __mips_generate_substraction(struct mips_generator *mips, struct quad *q)
         // 1) charger la valeur de l'opérande 1 dans le registre t1 (lw $t1, op1)
         char line_to_write[MIPS_MAX_LINE_SIZE];
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 2) charger la valeur de l'opérande 2 dans le registre t2 (lw $t2, op2)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->arg2->identifier);
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 3) calculer la différence et placer le résultat dans un registre temporaire (sub $t0, $t1, $t2)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sub $t0, $t1, $t2\n");
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 4) placer la valeur de la fidérence du registre vers la ram (sw $t0, res)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw $t0, %s\n", q->res->identifier);
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);            
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);            
 }
 
 // Fonction             : __mips_generate_multiplication
@@ -274,24 +274,24 @@ void __mips_generate_multiplication(struct mips_generator *mips, struct quad *q)
         // 1) charger la valeur de l'opérande 1 dans le registre t1 (lw $t1, op1)
         char line_to_write[MIPS_MAX_LINE_SIZE];
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 2) charger la valeur de l'opérande 2 dans le registre t2 (lw $t2, op2)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->arg2->identifier);
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 3) calculer la multiplication (mult $t1, $t2)
         // (Hi,Lo) est le résultat (on ne s'intéresse qu'à Hi pour la valeur entière)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "mult $t1, $t2\n");
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 4) placer le résultat du registre Hi dans le registre temporaire $t0 (mfhi $t0)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "mfhi $t0\n");
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 5) placer la valeur de la somme du registre vers la ram (sw $t0, res)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw $t0, %s\n", q->res->identifier);
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 }
 
 // Fonction             : __mips_generate_division
@@ -306,22 +306,22 @@ void __mips_generate_division(struct mips_generator *mips, struct quad *q)
         // 1) charger la valeur de l'opérande 1 dans le registre t1 (lw $t1, op1)
         char line_to_write[MIPS_MAX_LINE_SIZE];
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 2) charger la valeur de l'opérande 2 dans le registre t2 (lw $t2, op2)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->arg2->identifier);
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 3) calculer la division (div $t1, $t2)
         // le quotient est stocké dans Lo et le reste Hi
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "div $t1, $t2\n");
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 4) placer le résultat du registre Lo dans le registre temporaire $t0 (mflo $t0)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "mflo $t0\n");
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 5) placer la valeur de la somme du registre vers la ram (sw $t0, res)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw $t0, %s\n", q->res->identifier);
-        fwrite(line_to_write, sizeof(char), strlen(line_to_write) + 1, mips->output_file);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 }
