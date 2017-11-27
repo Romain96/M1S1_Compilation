@@ -17,6 +17,7 @@ minus           "-"
 multiply        "*"
 divide          "/"
 assignment	"="
+semicolon 	";"
 
 %%
 
@@ -35,6 +36,7 @@ assignment	"="
 {multiply}      { return MULTIPLY; }
 {divide}        { return DIVIDE; }
 {assignment}	{ return ASSIGNMENT; }
+{semicolon}	{ return SEMICOLON; }
 [()]            { return yytext[0]; }
 \t|\n|\r        { return yytext[0]; }
 [ ]             {  }

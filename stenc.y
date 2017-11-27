@@ -27,7 +27,9 @@
 %token <string> IDENTIFIER
 %token PLUS MINUS MULTIPLY DIVIDE
 %token ASSIGNMENT
+%token SEMICOLON
 
+%type <gencode> expression_list
 %type <gencode> expression
 %type <gencode> line
 
@@ -40,15 +42,30 @@
 %%
 
 line:
-        expression '\n'
+        expression_list '\n'
         {
-                printf("line -> expression\n");
+                printf("line -> expression_list\n");
                 $$.result = $1.result;
                 $$.code = $1.code;
                 printf("Match !!!\n");
                 return 0;
         }
         ;
+
+expression_list:
+	expression_list expression SEMICOLON
+	{
+		printf("expression_list -> expression_list expression SEMICOLON\n");
+		$$.code = list_concat($1.code, $2.code);	
+		$$.result = NULL;
+	}
+	| expression SEMICOLON
+	{
+		printf("expression_list -> expression SEMICOLON\n");
+		$$.code = $1.code;
+		$$.result = NULL;
+	}
+	;
 
 expression:
         expression PLUS expression
@@ -89,24 +106,13 @@ expression:
                 $$.result = $2.result;
                 $$.code = $2.code;
         }
-	| IDENTIFIER ASSIGNMENT INTEGER
+	| IDENTIFIER ASSIGNMENT expression
 	{
-		printf("expression -> IDENTIFIER ASSIGNMENT INTEGER\n");
+		printf("expression -> IDENTIFIER ASSIGNMENT expression\n");
 		struct symbol *id = symbol_lookup(symbol_table, $1);
-		struct symbol *val = symbol_new_temp(&symbol_table);
-		val->value = $3;
-		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, val, NULL, false, -1);
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $3.result, NULL, false, -1);
 		$$.result = id;
-		$$.code = list_new(new_quad);
-	}
-	| IDENTIFIER ASSIGNMENT IDENTIFIER
-	{
-		printf("expression -> IDENTIFIER ASSIGNMENT IDENTIFIER\n");
-		struct symbol *id_left = symbol_lookup(symbol_table, $1);
-		struct symbol *id_right = symbol_lookup(symbol_table, $3);
-		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id_left, id_right, NULL, false, -1);
-		$$.result = NULL;
-		$$.code = list_new(new_quad);
+		$$.code = list_concat($3.code, list_new(new_quad));
 	}
         | INTEGER
         {

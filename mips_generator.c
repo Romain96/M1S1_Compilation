@@ -235,8 +235,8 @@ void __mips_generate_addition(struct mips_generator *mips, struct quad *q)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "add $t0, $t1, $t2\n");
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
-        // 4) placer la valeur de la somme du registre vers la ram (sw $t0, res)
-        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw $t0, %s\n", q->res->identifier);
+        // 4) placer la valeur de la somme du registre vers la ram (sw $t0, arg1)
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw $t0, %s\n", q->arg1->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 }
 
