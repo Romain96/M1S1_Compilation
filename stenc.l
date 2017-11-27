@@ -16,6 +16,7 @@ plus            "+"
 minus           "-"
 multiply        "*"
 divide          "/"
+assignment	"="
 
 %%
 
@@ -33,6 +34,7 @@ divide          "/"
 {minus}         { return MINUS; }
 {multiply}      { return MULTIPLY; }
 {divide}        { return DIVIDE; }
+{assignment}	{ return ASSIGNMENT; }
 [()]            { return yytext[0]; }
 \t|\n|\r        { return yytext[0]; }
 [ ]             {  }

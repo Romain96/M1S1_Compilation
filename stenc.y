@@ -26,6 +26,7 @@
 %token <integer_value> INTEGER
 %token <string> IDENTIFIER
 %token PLUS MINUS MULTIPLY DIVIDE
+%token ASSIGNMENT
 
 %type <gencode> expression
 %type <gencode> line
@@ -87,6 +88,16 @@ expression:
                 $$.result = $2.result;
                 $$.code = $2.code;
         }
+	| IDENTIFIER ASSIGNMENT INTEGER
+	{
+		printf("expression -> IDENTIFIER ASSIGNMENT INTEGER\n");
+		struct symbol *id = symbol_lookup(symbol_table, $1);
+		struct symbol *val = symbol_new_temp(&symbol_table);
+		val->value = $3;
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, val, NULL, false, -1);
+		$$.result = id;
+		$$.code = list_new(new_quad);
+	}
         | INTEGER
         {
                 printf("expression -> INTEGER\n");

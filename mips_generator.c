@@ -203,9 +203,14 @@ void __mips_write_quad_list(struct mips_generator *mips)
 // Commentaire(s)       : génère le code MIPS d'une affectation
 void __mips_generate_assignment(struct mips_generator *mips, struct quad *q)
 {
-        // TODO assignment
-        printf("on verra plus tard pour les affectation...\n");
-        return;
+	// 1) charger le temporaire contenant la valeur à assigner dans le registre $t1 (lw $t0, op2)
+	char line_to_write[MIPS_MAX_LINE_SIZE];
+	snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t0, %s\n",  q->arg2->identifier);
+	fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+	// 2) placer la valeur de $t0 dans la RAM à l'adresse contenant l'identificateur
+	snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw $t0, %s\n", q->arg1->identifier);
+	fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 }
 
 // Fonction             : __mips_generate_addition
