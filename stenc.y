@@ -33,6 +33,7 @@
 
 %left PLUS MINUS
 %left MULTIPLY DIVIDE
+%right ASSIGNMENT
 
 %start line
 
@@ -96,6 +97,15 @@ expression:
 		val->value = $3;
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, val, NULL, false, -1);
 		$$.result = id;
+		$$.code = list_new(new_quad);
+	}
+	| IDENTIFIER ASSIGNMENT IDENTIFIER
+	{
+		printf("expression -> IDENTIFIER ASSIGNMENT IDENTIFIER\n");
+		struct symbol *id_left = symbol_lookup(symbol_table, $1);
+		struct symbol *id_right = symbol_lookup(symbol_table, $3);
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id_left, id_right, NULL, false, -1);
+		$$.result = NULL;
 		$$.code = list_new(new_quad);
 	}
         | INTEGER
