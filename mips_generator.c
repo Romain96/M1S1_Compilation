@@ -50,7 +50,9 @@ struct mips_generator *mips_setup(char *filename, struct symbol *symbol_table, s
 // Commentaire(s)       : écrit tout le code assembleur
 void mips_generate_assembly_code(struct mips_generator *mips)
 {
-	printf("Writting MIPS assembly code...\n");
+	printf("\n//////////////////////////////////////////////////\n");
+	printf("///////// Writting MIPS assembly code... /////////\n");
+	printf("//////////////////////////////////////////////////\n");
         // écriture de la table des symboles en segment .data
         __mips_write_symbol_table(mips);
 
