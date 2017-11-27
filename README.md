@@ -30,7 +30,7 @@ le StenC [Sten-Ci] est un sous ensemble du C auquel on a ajouté un type stencil
 |    DATE    |    DESCRIPTION    |
 |------------|-------------------|
 | 2017-11-05 | Début du projet   |
-| 2017-11-19 | Première ébauche d'une grammaire reconnaissant 75-80% du StneC |
+| 2017-11-19 | Première ébauche d'une grammaire reconnaissant 75-80% du StenC |
 | 2017-11-26 | Génération de code MIPS pour les expressions arithmétiques |
 |     ?      |        ?          |
 
