@@ -38,3 +38,18 @@ struct list *list_concat(struct list *l1, struct list *l2)
         // et on retourne l1 qui désormais contient l1 et l2
         return l1;
 }
+
+// libère la mémoire allouée par la liste
+// supprime la liste de pointeurs pas les quads eux-mêmes (voir quad_free)
+void list_free(struct list **l)
+{
+	struct list *iterator = *l; 
+	struct list *list_to_free = *l;
+	// parcours de la liste
+	while (iterator != NULL)
+	{
+		iterator = iterator->next;
+		free(list_to_free);
+		list_to_free = iterator;
+	}
+}

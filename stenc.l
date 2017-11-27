@@ -7,6 +7,9 @@
     extern struct symbol *symbol_table;
 %}
 
+%option nounput
+%option noyywrap
+
 integer         [0-9]|([1-9][0-9]*)
 identifier      [a-z_][a-zA-Z_]*
 plus            "+"
