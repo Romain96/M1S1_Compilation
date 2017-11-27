@@ -50,6 +50,7 @@ struct mips_generator *mips_setup(char *filename, struct symbol *symbol_table, s
 // Commentaire(s)       : écrit tout le code assembleur
 void mips_generate_assembly_code(struct mips_generator *mips)
 {
+	printf("Writting MIPS assembly code...\n");
         // écriture de la table des symboles en segment .data
         __mips_write_symbol_table(mips);
 
@@ -58,6 +59,7 @@ void mips_generate_assembly_code(struct mips_generator *mips)
 
         // terminaison de la génération du code assembleur
         mips_terminate(mips);
+	printf("MIPS assembly code generated successfully\n");
 }
 
 // Fonction             : mips_terminate
@@ -82,6 +84,7 @@ void mips_terminate(struct mips_generator *mips)
         quad_free(&mips->quad_list);
 
         // désallocation de la mémoire de la structure mips_generator
+	free(mips);
 }
 
 // Fonction             : __mips_write_symbol_table
@@ -92,6 +95,7 @@ void mips_terminate(struct mips_generator *mips)
 // Commentaire(s)       : écriture de la table des symboles en segment .data
 void __mips_write_symbol_table(struct mips_generator *mips)
 {
+	printf("Writting symbol table...\n");
         // génération du segment .data
         char data_segment[] = ".data\n";
         fwrite(&data_segment, sizeof(char), strlen(data_segment), mips->output_file);
@@ -117,6 +121,7 @@ void __mips_write_symbol_table(struct mips_generator *mips)
 // Commentaire(s)       : écriture des instructions en segment .text
 void __mips_write_quad_list(struct mips_generator *mips)
 {
+	printf("Writting quad list...\n");
         // génération du segent .text
         char text_segment[] = ".text\n";
         fwrite(&text_segment, sizeof(char), strlen(text_segment), mips->output_file);

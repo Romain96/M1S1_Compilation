@@ -18,6 +18,8 @@ multiply        "*"
 divide          "/"
 assignment	"="
 semicolon 	";"
+increase	"++"
+decrease	"--"
 
 %%
 
@@ -35,6 +37,8 @@ semicolon 	";"
 {minus}         { return MINUS; }
 {multiply}      { return MULTIPLY; }
 {divide}        { return DIVIDE; }
+{increase}	{ return INCREASE; }
+{increase}	{ return DECREASE; }
 {assignment}	{ return ASSIGNMENT; }
 {semicolon}	{ return SEMICOLON; }
 [()]            { return yytext[0]; }

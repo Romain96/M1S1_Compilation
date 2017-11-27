@@ -28,6 +28,7 @@
 %token PLUS MINUS MULTIPLY DIVIDE
 %token ASSIGNMENT
 %token SEMICOLON
+%token INCREASE DECREASE
 
 %type <gencode> expression_list
 %type <gencode> expression
@@ -68,7 +69,29 @@ expression_list:
 	;
 
 expression:
-        expression PLUS expression
+	IDENTIFIER INCREASE
+	{
+		printf("expression -> IDENTIFIER INCREASE (low priority)\n");
+		struct symbol *id = symbol_lookup(symbol_table, $1);
+		struct symbol *incr = symbol_new_temp(&symbol_table);
+		incr->value = 1;
+		struct symbol *res = symbol_new_temp(&symbol_table);
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_PLUS, id, incr, res, false, -1);
+		$$.result = res;
+		$$.code = list_new(new_quad);
+	}
+	| IDENTIFIER DECREASE
+	{
+		printf("expression -> IDENTIFIER DECREASE (low priority)\n");
+		struct symbol *id = symbol_lookup(symbol_table, $1);
+		struct symbol *incr = symbol_new_temp(&symbol_table);
+		incr->value = 1;
+		struct symbol *res = symbol_new_temp(&symbol_table);
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_MINUS, id, incr, res, false, -1);
+		$$.result = res;
+		$$.code = list_new(new_quad);
+	}
+        | expression PLUS expression
         {
                 printf("expression -> expression + expression\n");
                 struct symbol *res = symbol_new_temp(&symbol_table);
@@ -113,6 +136,28 @@ expression:
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $3.result, NULL, false, -1);
 		$$.result = id;
 		$$.code = list_concat($3.code, list_new(new_quad));
+	}
+	| INCREASE IDENTIFIER
+	{
+		printf("expression -> INCREASE IDENTIFIER (high priority)\n");
+		struct symbol *id = symbol_lookup(symbol_table, $2);
+		struct symbol *incr = symbol_new_temp(&symbol_table);
+		incr->value = 1;
+		struct symbol *res = symbol_new_temp(&symbol_table);
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_PLUS, id, incr, res, false, -1);
+		$$.result = res;
+		$$.code = list_new(new_quad);
+	}
+	| DECREASE IDENTIFIER
+	{
+		printf("expression -> DECREASE IDENTIFIER (high priority)\n");
+		struct symbol *id = symbol_lookup(symbol_table, $2);
+		struct symbol *decr = symbol_new_temp(&symbol_table);
+		decr->value = 1;
+		struct symbol *res = symbol_new_temp(&symbol_table);
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_MINUS, id, decr, res, false, -1);
+		$$.result = res;
+		$$.code = list_new(new_quad);
 	}
         | INTEGER
         {
