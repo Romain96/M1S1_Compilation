@@ -38,7 +38,7 @@ decrease	"--"
 {multiply}      { return MULTIPLY; }
 {divide}        { return DIVIDE; }
 {increase}	{ return INCREASE; }
-{increase}	{ return DECREASE; }
+{decrease}	{ return DECREASE; }
 {assignment}	{ return ASSIGNMENT; }
 {semicolon}	{ return SEMICOLON; }
 [()]            { return yytext[0]; }
