@@ -89,6 +89,10 @@ void mips_terminate(struct mips_generator *mips)
 	free(mips);
 }
 
+//===================================================================================
+// FONCTIONS D'ECRITURE : ECRITURE DE LA TABLE DES SYMBOLES ET DE LA LISTE DE QUADS
+//===================================================================================
+
 // Fonction             : __mips_write_symbol_table
 // Argument(s)          : - mips : une structure mips_generator générée par mips_setup
 // Valeur de retour     : /
@@ -185,6 +189,13 @@ void __mips_write_quad_list(struct mips_generator *mips)
                                         // TODO booléens
                                         printf("booléens pas encore pris en compte :(\n");
                                         break;
+                                case QUAD_PRINTI:
+                                        __mips_generate_print_integer(mips, iterator);
+                                        break;
+                                case QUAD_PRINTF:
+                                        printf("print string pas encore pris en compte :(\n");
+                                        //__mips_generate_print_string(mips, iterator);
+                                        break;
                                 default:
                                         printf("cas normalement impossible !\n");
                                         break;
@@ -201,6 +212,10 @@ void __mips_write_quad_list(struct mips_generator *mips)
         printf("quad list written successfully :)\n");
 }
 
+//===============================================================================
+// AFFECTATION D'UNE VALEUR A UN IDENTIFICATEUR
+//===============================================================================
+
 // Fonction             : __mips_generate_assignment
 // Argument(s)          : - mips : une structure mips_generator générée par mips_setup
 //                        - quad : le quad contenant la repésentation de l'instruction à générer
@@ -210,7 +225,7 @@ void __mips_write_quad_list(struct mips_generator *mips)
 // Commentaire(s)       : génère le code MIPS d'une affectation
 void __mips_generate_assignment(struct mips_generator *mips, struct quad *q)
 {
-	// 1) charger le temporaire contenant la valeur à assigner dans le registre $t1 (lw $t0, op2)
+	// 1) charger le temporaire contenant la valeur à assigner dans le registre $t1 (lw $t0, arg2)
 	char line_to_write[MIPS_MAX_LINE_SIZE];
 	snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t0, %s\n",  q->arg2->identifier);
 	fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
@@ -219,6 +234,10 @@ void __mips_generate_assignment(struct mips_generator *mips, struct quad *q)
 	snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw $t0, %s\n", q->arg1->identifier);
 	fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 }
+
+//===============================================================================
+// FONCTIONS ARITHMETIQUES : ADDITION, SOUSTRACTION, MULTIPLICATION, DIVISION
+//===============================================================================
 
 // Fonction             : __mips_generate_addition
 // Argument(s)          : - mips : une structure mips_generator générée par mips_setup
@@ -229,12 +248,12 @@ void __mips_generate_assignment(struct mips_generator *mips, struct quad *q)
 // Commentaire(s)       : génère le code MIPS d'une addition
 void __mips_generate_addition(struct mips_generator *mips, struct quad *q)
 {
-        // 1) charger la valeur de l'opérande 1 dans le registre t1 (lw $t1, op1)
+        // 1) charger la valeur de l'opérande 1 dans le registre t1 (lw $t1, arg1)
         char line_to_write[MIPS_MAX_LINE_SIZE];
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
-        // 2) charger la valeur de l'opérande 2 dans le registre t2 (lw $t2, op2)
+        // 2) charger la valeur de l'opérande 2 dans le registre t2 (lw $t2, arg2)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->arg2->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
@@ -256,12 +275,12 @@ void __mips_generate_addition(struct mips_generator *mips, struct quad *q)
 // Commentaire(s)       : génère le code MIPS d'une soustraction
 void __mips_generate_substraction(struct mips_generator *mips, struct quad *q)
 {
-        // 1) charger la valeur de l'opérande 1 dans le registre t1 (lw $t1, op1)
+        // 1) charger la valeur de l'opérande 1 dans le registre t1 (lw $t1, arg1)
         char line_to_write[MIPS_MAX_LINE_SIZE];
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
-        // 2) charger la valeur de l'opérande 2 dans le registre t2 (lw $t2, op2)
+        // 2) charger la valeur de l'opérande 2 dans le registre t2 (lw $t2, arg2)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->arg2->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
@@ -283,12 +302,12 @@ void __mips_generate_substraction(struct mips_generator *mips, struct quad *q)
 // Commentaire(s)       : génère le code MIPS d'une multiplication
 void __mips_generate_multiplication(struct mips_generator *mips, struct quad *q)
 {
-        // 1) charger la valeur de l'opérande 1 dans le registre t1 (lw $t1, op1)
+        // 1) charger la valeur de l'opérande 1 dans le registre t1 (lw $t1, arg1)
         char line_to_write[MIPS_MAX_LINE_SIZE];
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
-        // 2) charger la valeur de l'opérande 2 dans le registre t2 (lw $t2, op2)
+        // 2) charger la valeur de l'opérande 2 dans le registre t2 (lw $t2, arg2)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->arg2->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
@@ -315,12 +334,12 @@ void __mips_generate_multiplication(struct mips_generator *mips, struct quad *q)
 // Commentaire(s)       : génère le code MIPS d'une division
 void __mips_generate_division(struct mips_generator *mips, struct quad *q)
 {
-        // 1) charger la valeur de l'opérande 1 dans le registre t1 (lw $t1, op1)
+        // 1) charger la valeur de l'opérande 1 dans le registre t1 (lw $t1, arg1)
         char line_to_write[MIPS_MAX_LINE_SIZE];
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
-        // 2) charger la valeur de l'opérande 2 dans le registre t2 (lw $t2, op2)
+        // 2) charger la valeur de l'opérande 2 dans le registre t2 (lw $t2, arg2)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->arg2->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
@@ -337,3 +356,38 @@ void __mips_generate_division(struct mips_generator *mips, struct quad *q)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw $t0, %s\n", q->res->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 }
+
+//========================================================================================
+// FONCTIONS D'AFFICHAGE : AFFICHAGE D'UN ENTIER ET AFFICHAGE D'UNE CHAINE DE CARACTERES
+//========================================================================================
+
+// Fonction             : __mips_generate_print_integer
+// Argument(s)          : - mips : une structure mips_generator générée par mips_setup
+//                        - quad : le quad contenant la repésentation de l'instruction à générer
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : génère le code MIPS pour afficher un entier à l'écran (printi)
+void __mips_generate_print_integer(struct mips_generator *mips, struct quad *q)
+{
+        // 1) placer la valeur de l'entier dans le registre $a0 (lw $a0, arg1)
+        char line_to_write[MIPS_MAX_LINE_SIZE];
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $a0, %s\n", q->arg1->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 2) placer la valeur 1 (print integer) dans $v0 (li $v0, 1)
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "li $v0, 1\n");
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // appeller syscall (syscall)
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "syscall\n");
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+}
+
+// Fonction             : __mips_generate_print_string
+// Argument(s)          : - mips : une structure mips_generator générée par mips_setup
+//                        - quad : le quad contenant la repésentation de l'instruction à générer
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : génère le code MIPS pour afficher une chaine de caractères à l'écran

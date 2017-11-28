@@ -122,6 +122,10 @@ void quad_print(struct quad *quad_list)
 				printf("<=, "); break;
 			case QUAD_ASSIGNMENT:
 				printf("=, "); break;
+			case QUAD_PRINTF:
+				printf("printf, "); break;
+			case QUAD_PRINTI:
+				printf("printi, "); break;
 			default:
 				printf("N/A, "); break;
 		}

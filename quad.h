@@ -4,7 +4,7 @@
 #include "symbol_table.h"
 
 // définit tous les opérateurs possibles dans un quad
-enum quad_operator{ QUAD_NO_OP, QUAD_PLUS, QUAD_MINUS, QUAD_MULTIPLY, QUAD_DIVIDE, QUAD_EQ, QUAD_NE, QUAD_GT, QUAD_LT, QUAD_GE, QUAD_LE, QUAD_ASSIGNMENT, QUAD_INCREASE, QUAD_DECREASE, QUAD_AND, QUAD_OR, QUAD_NOT};
+enum quad_operator{ QUAD_NO_OP, QUAD_PLUS, QUAD_MINUS, QUAD_MULTIPLY, QUAD_DIVIDE, QUAD_EQ, QUAD_NE, QUAD_GT, QUAD_LT, QUAD_GE, QUAD_LE, QUAD_ASSIGNMENT, QUAD_INCREASE, QUAD_DECREASE, QUAD_AND, QUAD_OR, QUAD_NOT, QUAD_PRINTF, QUAD_PRINTI};
 
 // structure de quad définie comme une liste chainée de quads
 struct quad

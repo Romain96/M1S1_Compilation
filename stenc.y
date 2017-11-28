@@ -24,15 +24,18 @@
 }
 
 %token <integer_value> INTEGER
-%token <string> IDENTIFIER
+%token <string> IDENTIFIER STRING
 %token PLUS MINUS MULTIPLY DIVIDE
 %token ASSIGNMENT
 %token SEMICOLON
 %token INCREASE DECREASE
+%token PRINT_STRING PRINT_INTEGER
+%token LEFT_ROUND_BRACKET RIGHT_ROUND_BRACKET
 
-%type <gencode> expression_list
-%type <gencode> expression
 %type <gencode> line
+%type <gencode> expression
+%type <gencode> expression_list
+%type <gencode> print_function_call
 
 %left PLUS MINUS
 %left MULTIPLY DIVIDE
@@ -175,6 +178,31 @@ expression:
                 struct symbol *id = symbol_lookup(symbol_table, $1);
                 $$.result = id;
                 $$.code = NULL;
+        }
+        | print_function_call
+        ;
+
+print_function_call:
+        PRINT_STRING LEFT_ROUND_BRACKET STRING RIGHT_ROUND_BRACKET
+        {
+                // TODO
+                $$.result = NULL;
+                $$.code = NULL;
+        }
+        | PRINT_INTEGER LEFT_ROUND_BRACKET INTEGER RIGHT_ROUND_BRACKET
+        {
+                struct symbol *new = symbol_new_temp(&symbol_table);
+                new->value = $3;
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_PRINTI, new, NULL, NULL, false, -1);
+                $$.result = NULL;
+                $$.code = list_new(new_quad);
+        }
+        | PRINT_INTEGER LEFT_ROUND_BRACKET IDENTIFIER RIGHT_ROUND_BRACKET
+        {
+                struct symbol *id = symbol_lookup(symbol_table, $3);
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_PRINTI, id, NULL, NULL, false, -1);
+                $$.result = NULL;
+                $$.code = list_new(new_quad);
         }
         ;
 
