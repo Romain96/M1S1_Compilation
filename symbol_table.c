@@ -81,20 +81,20 @@ void symbol_free(struct symbol **symbol)
 // Affiche la table des symboles
 void symbol_print(struct symbol *symbol)
 {
-	printf("\n/////////////////////////////////////////////////\n");
-	printf("////////////////  Symbol table  /////////////////\n");
-	printf("/////////////////////////////////////////////////\n");
+	printf("\n///////////////////////////////////////////////////////////\n");
+	printf("/////////////////////  Symbol table  //////////////////////\n");
+	printf("///////////////////////////////////////////////////////////\n");
 	while (symbol != NULL)
 	{
 		printf("id : %10s, is_constant : ", symbol->identifier);
 		if (symbol->is_constant)
-			printf("true, \n");
+			printf("true, ");
 		else
-			printf("false\n");
+			printf("false, ");
 		if (symbol->is_string_litteral)
-			printf("%s\n", symbol->string_value);
+			printf("string value : %s\n", symbol->string_value);
 		else
-			printf("%d\n", symbol->int_value);
+			printf("int value : %d\n", symbol->int_value);
 		symbol = symbol->next;
 	}
 }

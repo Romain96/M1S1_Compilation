@@ -120,7 +120,7 @@ void __mips_write_symbol_table(struct mips_generator *mips)
 		else
 		// variable chaine de caractères
 		{
-			snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "%s: .asciiz\n", iterator->string_value);
+			snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "%s: .asciiz %s\n", iterator->identifier, iterator->string_value);
 			fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 		}
                 iterator = iterator->next;
@@ -202,8 +202,7 @@ void __mips_write_quad_list(struct mips_generator *mips)
                                         __mips_generate_print_integer(mips, iterator);
                                         break;
                                 case QUAD_PRINTF:
-                                        printf("print string pas encore pris en compte :(\n");
-                                        //__mips_generate_print_string(mips, iterator);
+                                        __mips_generate_print_string(mips, iterator);
                                         break;
                                 default:
                                         printf("cas normalement impossible !\n");
@@ -400,3 +399,18 @@ void __mips_generate_print_integer(struct mips_generator *mips, struct quad *q)
 // Pré-condition(s)     : /
 // Post-condition(s)    : /
 // Commentaire(s)       : génère le code MIPS pour afficher une chaine de caractères à l'écran
+void __mips_generate_print_string(struct mips_generator *mips, struct quad *q)
+{
+        // 1) placer l'adresse de la chaine à afficher dans $a0 (la $a0, arg1)
+        char line_to_write[MIPS_MAX_LINE_SIZE];
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "la $a0, %s\n", q->arg1->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 2) placer la valeur 4 (print string) dans $v0 (li $v0, 4)
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "li $v0, 4\n");
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 3/ appel à syscall (syscall)
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "syscall\n");
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+}
