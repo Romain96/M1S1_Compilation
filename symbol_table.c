@@ -11,7 +11,7 @@ struct symbol *symbol_alloc()
 	struct symbol *new = malloc(sizeof(struct symbol));
 	new->identifier = NULL;
 	new->is_constant = false;
-	new->value = 0;
+	new->is_string_litteral = false;
 	new->next = NULL;
 	return new;
 }
@@ -88,9 +88,13 @@ void symbol_print(struct symbol *symbol)
 	{
 		printf("id : %10s, is_constant : ", symbol->identifier);
 		if (symbol->is_constant)
-			printf("true, value : %d\n", symbol->value);
+			printf("true, \n");
 		else
-			printf("false, value : N/A\n");
+			printf("false\n");
+		if (symbol->is_string_litteral)
+			printf("%s\n", symbol->string_value);
+		else
+			printf("%d\n", symbol->int_value);
 		symbol = symbol->next;
 	}
 }

@@ -77,7 +77,7 @@ expression:
 		printf("expression -> IDENTIFIER INCREASE (low priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $1);
 		struct symbol *incr = symbol_new_temp(&symbol_table);
-		incr->value = 1;
+		incr->int_value = 1;
 		struct symbol *res = symbol_new_temp(&symbol_table);
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_PLUS, id, incr, res, false, -1);
 		$$.result = res;
@@ -88,7 +88,7 @@ expression:
 		printf("expression -> IDENTIFIER DECREASE (low priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $1);
 		struct symbol *incr = symbol_new_temp(&symbol_table);
-		incr->value = 1;
+		incr->int_value = 1;
 		struct symbol *res = symbol_new_temp(&symbol_table);
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_MINUS, id, incr, res, false, -1);
 		$$.result = res;
@@ -145,7 +145,7 @@ expression:
 		printf("expression -> INCREASE IDENTIFIER (high priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $2);
 		struct symbol *incr = symbol_new_temp(&symbol_table);
-		incr->value = 1;
+		incr->int_value = 1;
 		struct symbol *res = symbol_new_temp(&symbol_table);
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_PLUS, id, incr, res, false, -1);
 		$$.result = res;
@@ -156,7 +156,7 @@ expression:
 		printf("expression -> DECREASE IDENTIFIER (high priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $2);
 		struct symbol *decr = symbol_new_temp(&symbol_table);
-		decr->value = 1;
+		decr->int_value = 1;
 		struct symbol *res = symbol_new_temp(&symbol_table);
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_MINUS, id, decr, res, false, -1);
 		$$.result = res;
@@ -167,7 +167,7 @@ expression:
                 printf("expression -> INTEGER\n");
                 struct symbol *new = symbol_new_temp(&symbol_table);
                 new->is_constant = true;
-                new->value = $1;
+                new->int_value = $1;
                 $$.result = new;
                 $$.code = NULL;
                 
@@ -185,14 +185,17 @@ expression:
 print_function_call:
         PRINT_STRING LEFT_ROUND_BRACKET STRING RIGHT_ROUND_BRACKET
         {
-                // TODO
+                struct symbol *new = symbol_new_temp(&symbol_table);
+		new->string_value = $3;
+		new->is_string_litteral = true;
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_PRINTF, new, NULL, NULL, false, -1);
                 $$.result = NULL;
-                $$.code = NULL;
+                $$.code = list_new(new_quad);
         }
         | PRINT_INTEGER LEFT_ROUND_BRACKET INTEGER RIGHT_ROUND_BRACKET
         {
                 struct symbol *new = symbol_new_temp(&symbol_table);
-                new->value = $3;
+                new->int_value = $3;
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_PRINTI, new, NULL, NULL, false, -1);
                 $$.result = NULL;
                 $$.code = list_new(new_quad);

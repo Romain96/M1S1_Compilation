@@ -8,7 +8,11 @@ struct symbol
 {
 	char *identifier;
 	bool is_constant;
-	int value;
+	bool is_string_litteral;
+	union {
+		int int_value;		// prend en compte les variables entères
+		char *string_value;	// prend en compte les chaines de caractères
+	};
 	struct symbol *next;
 };
 

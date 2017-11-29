@@ -111,9 +111,18 @@ void __mips_write_symbol_table(struct mips_generator *mips)
         while(iterator != NULL)
         {                   
                 char line_to_write[MIPS_MAX_LINE_SIZE];
-                snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "%s: .word %d\n", iterator->identifier, iterator->value);
-                fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
-
+		// variable entière
+		if (!iterator->is_string_litteral)
+		{
+                	snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "%s: .word %d\n", iterator->identifier, iterator->int_value);
+                	fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+		}
+		else
+		// variable chaine de caractères
+		{
+			snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "%s: .asciiz\n", iterator->string_value);
+			fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+		}
                 iterator = iterator->next;
         }
         printf("Symbol table written successfully :)\n");

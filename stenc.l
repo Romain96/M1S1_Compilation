@@ -41,7 +41,11 @@ string              ["][^\"]*["]
                             return IDENTIFIER; 
                         }
 {string}                { 
-                            yylval.string = strdup(yytext);
+				yylval.string = malloc((strlen(yytext) + 1) * sizeof(char));
+				int i;
+				for (i = 0; i < strlen(yytext) - 2; i++)
+					yylval.string[i] = yytext[i+1];
+				yylval.string[i] = '\0';
                             return STRING; 
                         }
 {plus}                  { return PLUS; }
