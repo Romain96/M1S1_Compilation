@@ -340,7 +340,8 @@ division:
 %%
 
 int main(int argc, char* argv[])
-{
+{	
+
 	if (argc != 2)
 	{
 		fprintf(stderr, "usage : %s filename\n", argv[0]);
@@ -348,4 +349,115 @@ int main(int argc, char* argv[])
 	}
 	yyin = fopen(argv[1], "r");
 	return yyparse();
+
+/*
+
+
+Test de simplification de grammaire
+
+
+
+
+program:
+	  instruction_list
+		{
+			printf("program -> instruction_list\n");
+		}
+	;
+
+instruction_list:
+	  instruction_list instruction_list_BIS
+		{
+			printf("instruction_list -> instruction_list_BIS instruction\n");
+		}
+	| instruction_list_BIS
+		{
+			printf("instruction_list -> instruction_list_BIS control_block\n");
+		}
+	;
+
+instruction_list_bis:
+	  instruction
+		{
+			printf("insruction_list -> instruction\n");
+		}
+	| control_block
+		{
+			printf("instruction_list -> control_block\n");
+		}
+	;
+
+
+
+int_or_id:
+	  INTEGER
+		{
+			printf("int_or_id -> IDENTIFIER boolean_binary_operator INTEGER\n");
+		}
+	| IDENTIFIER
+
+		{
+			printf("int_or_id -> IDENTIFIER boolean_binary_operator IDENTIFIER\n");
+		}
+	;
+
+true_false_statement:
+	  IDENTIFIER boolean_binary_operator int_or_id
+		{
+			printf("true_false_statement -> IDENTIFIER boolean_binary_operator int_or_id\n");
+		}
+	| INTEGER boolean_binary_operator int_or_id
+		{
+			printf("true_false_statement -> INTEGER boolean_binary_operator int_or_id\n");
+		}
+		;
+
+
+addition:
+	  INTEGER BINARY_OP_ADDITION int_or_id
+		{
+			printf("addition -> INTEGER BINARY_OP_ADDITION int_or_id\n");
+		}
+	| IDENTIFIER BINARY_OP_ADDITION int_or_id
+		{
+			printf("addition -> IDENTIFIER BINARY_OP_ADDITION int_or_id\n");
+		}
+	;
+
+substraction:
+	  INTEGER BINARY_OP_SUBSTRACTION int_or_id
+		{
+			printf("substraction -> INTEGER BINARY_OP_SUBSTRACTION int_or_id\n");
+		}
+	| IDENTIFIER BINARY_OP_SUBSTRACTION int_or_id
+		{
+			printf("substraction -> IDENTIFIER BINARY_OP_SUBSTRACTION int_or_id\n");
+		}
+	;
+
+multiplication:
+	  INTEGER BINARY_OP_MULTIPLICATION int_or_id
+		{
+			printf("multiplication -> INTEGER BINARY_OP_MULTIPLICATION int_or_id\n");
+		}
+	| IDENTIFIER BINARY_OP_MULTIPLICATION int_or_id
+		{
+			printf("multiplication -> IDENTIFIER BINARY_OP_MULTIPLICATION int_or_id\n");
+		}
+	;
+
+division:
+	  INTEGER BINARY_OP_DIVISION int_or_id
+		{
+			printf("division -> INTEGER BINARY_OP_DIVISION int_or_id\n");
+		}
+	
+	| IDENTIFIER BINARY_OP_DIVISION int_or_id
+		{
+			printf("division -> IDENTIFIER BINARY_OP_DIVISION int_or_id\n");
+		}
+	;
+
+*/
+
 }
