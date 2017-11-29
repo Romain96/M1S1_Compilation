@@ -33,6 +33,7 @@ le StenC [Sten-Ci] est un sous ensemble du C auquel on a ajouté un type stencil
 | 2017-11-19 | Première ébauche d'une grammaire reconnaissant 75-80% du StenC |
 | 2017-11-26 | Génération de code MIPS pour les expressions arithmétiques |
 | 2017-11-27 | Génération de listes d'expressions arithmétiques + affectations (entier) |
+| 2017-11-29 | Génération du code MIPS des fonctions printf et printi |
 |     ?      |        ?          |
 
 ## Spécification complète du compilateur [à venir]
