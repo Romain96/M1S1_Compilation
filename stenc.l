@@ -66,6 +66,6 @@ string              ["][^\"]*["]
 {right_round_bracket}   { return RIGHT_ROUND_BRACKET; }
 \t|\n|\r                { return yytext[0]; }
 [ ]                     {  }
-.                       { printf("lexical error : char %s not recognized\n", yytext);}
+.                       { printf("lexical error : char %s not recognized\n", yytext); exit(1); }
 
 %%
