@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-// structure de table des symboles sous forme de liste cha�n�e
+// structure de table des symboles sous forme de liste chainée
 struct symbol 
 {
 	char *identifier;

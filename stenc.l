@@ -35,17 +35,23 @@ string              ["][^\"]*["]
                             return INTEGER; 
                         }
 {identifier}            { 
-                            yylval.string = strdup(yytext);
-                            if (symbol_lookup(symbol_table, yytext) == NULL)
-                                symbol_add(&symbol_table, yytext); 
+                            yylval.string = malloc((strlen(yytext) + 2) * sizeof(char));
+                            // préfixe
+                            yylval.string[0] = '@';
+                            int i;
+                            for (i = 0; i < strlen(yytext) + 1; i++)
+                                yylval.string[i+1] = yytext[i];
+                            yylval.string[i+1] = '\0';
+                            if (symbol_lookup(symbol_table, yylval.string) == NULL)
+                                symbol_add(&symbol_table, yylval.string); 
                             return IDENTIFIER; 
                         }
 {string}                { 
-				yylval.string = malloc((strlen(yytext) + 1) * sizeof(char));
-				int i;
-				for (i = 0; i < strlen(yytext) - 2; i++)
-					yylval.string[i] = yytext[i+1];
-				yylval.string[i] = '\0';
+				            yylval.string = malloc((strlen(yytext) - 1) * sizeof(char));
+				            int i;
+				            for (i = 0; i < strlen(yytext) - 2; i++)
+					            yylval.string[i] = yytext[i+1];
+				            yylval.string[i] = '\0';
                             return STRING; 
                         }
 {plus}                  { return PLUS; }
