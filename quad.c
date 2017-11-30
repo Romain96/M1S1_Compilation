@@ -4,6 +4,8 @@
 #include "symbol_table.h"
 #include "quad.h"
 
+#define QUAD_MAX_LABEL_STRING 42
+
 // génère un nouveau quad
 struct quad *quad_gen(struct quad **quad_list, enum quad_operator op, struct symbol *arg1, struct symbol *arg2, struct symbol *res, bool contain_goto, int goto_quad)
 {
@@ -20,6 +22,8 @@ struct quad *quad_gen(struct quad **quad_list, enum quad_operator op, struct sym
 		(*quad_list)->res = res;
 		(*quad_list)->contain_goto = contain_goto;
 		(*quad_list)->goto_quad = goto_quad;
+		(*quad_list)->is_labelled = false;
+		(*quad_list)->label_name = NULL;
 		(*quad_list)->next = NULL;
 		quad_number++;
 		return *quad_list;
@@ -35,6 +39,8 @@ struct quad *quad_gen(struct quad **quad_list, enum quad_operator op, struct sym
 		new_quad->res = res;
 		new_quad->contain_goto = contain_goto;
 		new_quad->goto_quad = goto_quad;
+		new_quad->is_labelled = false;
+		new_quad->label_name = NULL;
 		new_quad->next = NULL;
 		quad_number++;
 
@@ -48,28 +54,15 @@ struct quad *quad_gen(struct quad **quad_list, enum quad_operator op, struct sym
 	}
 }
 
-// concatène deux listes de quads
-struct quad *quad_concat(struct quad *l1, struct quad *l2)
+// étiquette un quad
+void quad_label(struct quad *q)
 {
-	// si les deux listes sont vide on retourne une liste vide
-	if (l1 == NULL && l2 == NULL)
-		return NULL;
-
-	// si l1 est vide on retourne l2
-	if (l1 == NULL)
-		return l2;
-
-	// si l2 est vide on retourne l1
-	if (l2 == NULL)
-		return l1;
-
-	// sinon on parcours l1 jusqu'à la fin et on ajoute un lien vers l2
-	struct quad *iterator = l1;
-	while (iterator->next != NULL)
-		iterator = iterator->next;
-	iterator->next = l2;
-	// et on retourne l1 qui désormais contient l1 + l2
-	return l1;
+	static int label_number = 0;
+	char label[QUAD_MAX_LABEL_STRING];
+	snprintf(label, QUAD_MAX_LABEL_STRING, "label_%d", label_number);
+	label_number++;
+	q->is_labelled = true;
+	q->label_name = strdup(label);
 }
 
 // libère la mémoire allouée par la liste de quads
@@ -80,6 +73,8 @@ void quad_free(struct quad **ql)
 	while (iterator != NULL)
 	{
 		iterator = iterator->next;
+		if (quad_to_free->is_labelled)
+			free(quad_to_free->label_name);
 		free(quad_to_free);
 		quad_to_free = iterator;
 	}
@@ -148,8 +143,12 @@ void quad_print(struct quad *quad_list)
 			printf("result : %p", quad_list->res);
 
 		// affiche le goto s'il y en a un
-		if (quad_list->contain_goto == true)
-			printf(", goto : %d\n", quad_list->goto_quad);
+		if (quad_list->contain_goto)
+			printf(", goto : %d", quad_list->goto_quad);
+
+		// affichage du label s'il en a un
+		if (quad_list->is_labelled)
+			printf(", label : %s\n", quad_list->label_name);
 		else
 			printf("\n");
 

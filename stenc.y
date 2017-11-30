@@ -137,6 +137,7 @@ control_struct:
                 $$.nextlist = list_concat($3.falselist, $5.nextlist);
                 // génération du goto inconditionnel
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, -1);
+                quad_label(new_quad);
                 // la nextlist du bloc est la concaténation de la nextlist du bloc et du nouveau quad
                 $$.nextlist = list_concat($$.nextlist, list_new(new_quad));
                 // le code est le tout
@@ -158,6 +159,7 @@ control_struct:
                 $$.nextlist = list_concat($$.nextlist, $7.nextlist);
                 // on génère un goto inconditionnel vers la sortie
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, -1);
+                quad_label(new_quad);
                 // la nextlist est la concaténation de la nextlist et du goto nouvellement généré
                 $$.nextlist = list_concat($$.nextlist, list_new(new_quad));
                 // le code est le tout
@@ -175,6 +177,7 @@ if_else_goto:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, -1);
+                quad_label(new_quad);
                 $$.code = list_new(new_quad);
                 $$.nextlist = list_new(new_quad);
         }
@@ -395,8 +398,10 @@ condition:
                 struct symbol *id = symbol_lookup(symbol_table, $1);
                 // génération du goto conditionnel : if ID goto ?
                 struct quad *new_quad_true = quad_gen(&quad_list, QUAD_NO_OP, id, NULL, NULL, true, -1);
+                quad_label(new_quad_true);
                 // génération du goto inconditionnel : goto ?
                 struct quad *new_quad_false = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, -1);
+                quad_label(new_quad_false);
                 // la truelist est le quad contenant le goto conditionnel
                 $$.truelist = list_new(new_quad_true);
                 // la falselist est le quad contenant le goto inconditionnel
@@ -438,8 +443,10 @@ condition:
                                 fprintf(stderr, "relop non reconnu...\n");
                                 exit(1);
                 }
+                quad_label(new_quad_true);
                 // génération du goto inconditionnel : goto ?
                 struct quad *new_quad_false = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, -1);
+                quad_label(new_quad_false);
                 // la truelist est le quad contenant le goto conditionnel
                 $$.truelist = list_new(new_quad_true);
                 // la falselist est le quad contenant le goto inconditionnel
