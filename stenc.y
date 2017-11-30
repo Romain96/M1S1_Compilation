@@ -24,6 +24,7 @@
                 struct list *code;
                 struct list *truelist;
                 struct list *falselist;
+                struct list *nextlist;
         }gencode;
 }
 
@@ -37,10 +38,14 @@
 %token LEFT_ROUND_BRACKET RIGHT_ROUND_BRACKET LEFT_BRACE RIGHT_BRACE
 %token BOOL_EQ BOOL_NE BOOL_GT BOOL_LT BOOL_GE BOOL_LE
 %token BOOL_AND BOOL_OR BOOL_NOT
+%token IF ELSE FOR WHILE
 
-%type <gencode> line
-%type <gencode> instruction
-%type <gencode> expression_list
+%type <gencode> program
+%type <gencode> statement_list
+%type <gencode> statement
+%type <gencode> control_struct
+%type <gencode> if_else_goto
+%type <gencode> instruction_block
 %type <gencode> expression
 %type <gencode> condition
 %type <relop_code> relop
@@ -52,58 +57,140 @@
 %left BOOL_AND BOOL_OR
 %nonassoc BOOL_NOT
 
-%start line
+%start program
 
 %%
 
-line:
-        instruction '\n'
+program:
+        statement_list '\n'
         {
-                printf("line -> expression_list\n");
+                printf("program -> statement_list\n");
                 $$.result = $1.result;
                 $$.code = $1.code;
                 $$.truelist = $1.truelist;
                 $$.falselist = $1.falselist;
+                $$.nextlist = $1.nextlist;
                 printf("Match !!!\n");
                 return 0;
         }
         ;
 
-instruction:
-        expression_list
+statement_list:
+        statement_list statement
         {
-                printf("instruction -> expression_list\n");
+                printf("statement_list -> statement_list statement\n");
                 $$.result = $1.result;
-                $$.code = $1.code;
-                $$.truelist = $1.truelist;
-                $$.falselist = $1.falselist;
+                $$.code = list_concat($1.code, $2.code);
+                $$.truelist = list_concat($1.truelist, $2.truelist);
+                $$.falselist = list_concat($1.falselist, $2.falselist);
+                list_complete($1.nextlist, $2.code->current_quad->id);
+                $$.nextlist = NULL;
         }
-        | condition
+        | statement
         {
-                printf("instruction -> condition\n");
+                printf("statement_list -> statement\n");
                 $$.result = $1.result;
                 $$.code = $1.code;
                 $$.truelist = $1.truelist;
                 $$.falselist = $1.falselist;
+                $$.nextlist = $1.nextlist;
         }
         ;
 
-expression_list:
-	expression_list expression SEMICOLON
+statement:
+        expression SEMICOLON
 	{
-		printf("expression_list -> expression_list expression SEMICOLON\n");
-		$$.code = list_concat($1.code, $2.code);	
-		$$.result = NULL;
-	}
-	| expression SEMICOLON
-	{
-		printf("expression_list -> expression SEMICOLON\n");
+		printf("statement -> expression SEMICOLON\n");
 		$$.code = $1.code;
 		$$.result = NULL;
                 $$.truelist = $1.truelist;
                 $$.falselist = $1.falselist;
+                $$.nextlist = $1.nextlist;
 	}
-	;
+        | control_struct
+        {
+                printf("statement -> control_struct\n");
+                $$.code = $1.code;
+		$$.result = NULL;
+                $$.truelist = $1.truelist;
+                $$.falselist = $1.falselist;
+                $$.nextlist = $1.nextlist;
+        }
+        | condition
+        {
+                printf("statement -> condition\n");
+                $$.result = $1.result;
+                $$.code = $1.code;
+                $$.truelist = $1.truelist;
+                $$.falselist = $1.falselist;
+                $$.nextlist = $1.nextlist;
+        }
+        ;
+
+control_struct:
+        IF LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET instruction_block
+        {
+                printf("control_struct -> IF (condition)\n");
+                // on complète la truelist de condition avec le premier quad du bloc d'instructions
+                list_complete($3.truelist, $5.code->current_quad->id);
+                // la nextlist est la concaténation de la falselist de condition et et de la nextlist du bloc d'instructions
+                $$.nextlist = list_concat($3.falselist, $5.nextlist);
+                // génération du goto inconditionnel
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, -1);
+                // la nextlist du bloc est la concaténation de la nextlist du bloc et du nouveau quad
+                $$.nextlist = list_concat($$.nextlist, list_new(new_quad));
+                // le code est le tout
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.code = list_concat($3.code, $5.code);
+                $$.result = NULL;
+        }
+        | IF LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET instruction_block ELSE if_else_goto instruction_block
+        {
+                printf("control_struct -> IF (condition) else\n");
+                // on complète la truelist de condition avec le premier quad du premier bloc d'instructions
+                list_complete($3.truelist, $5.code->current_quad->id);
+                // on complète la falselist de condition avec le premier quad du second bloc d'instructions
+                list_complete($3.falselist, $8.code->current_quad->id);
+                // la nextlist est la concaténation des nextlists des deux blocs d'instructions
+                $$.nextlist = list_concat($5.nextlist, $8.nextlist);
+                // la nextlist est la concaténation de la nextlist et du goto entre if et else
+                $$.nextlist = list_concat($$.nextlist, $7.nextlist);
+                // on génère un goto inconditionnel vers la sortie
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, -1);
+                // la nextlist est la concaténation de la nextlist et du goto nouvellement généré
+                $$.nextlist = list_concat($$.nextlist, list_new(new_quad));
+                // le code est le tout
+                $$.code = list_concat($3.code, list_concat($5.code, $8.code));
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.result = NULL;
+        }
+        ;
+
+if_else_goto:
+        {
+                // on génère le code d'un goto incomplet entre le if et le else
+                $$.result = NULL;
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, -1);
+                $$.code = list_new(new_quad);
+                $$.nextlist = list_new(new_quad);
+        }
+        ;
+
+instruction_block:
+        LEFT_BRACE statement_list RIGHT_BRACE
+        {
+                printf("instruction_block -> { statement_list }\n");
+                $$.result = $2.result;
+                $$.truelist = $2.truelist;
+                $$.falselist = $2.falselist;
+                $$.code = $2.code;
+                $$.nextlist = $2.nextlist;
+        }
+        ;
 
 expression:
         IDENTIFIER INCREASE
@@ -118,6 +205,7 @@ expression:
 		$$.code = list_new(new_quad);
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.nextlist = NULL;
 	}
 	| IDENTIFIER DECREASE
 	{
@@ -131,6 +219,7 @@ expression:
 		$$.code = list_new(new_quad);
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.nextlist = NULL;
 	}
         | expression PLUS expression
         {
@@ -141,6 +230,7 @@ expression:
                 $$.code = list_concat(list_concat($1.code, $3.code), list_new(new));
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.nextlist = NULL;
         }
         | expression MINUS expression
         {
@@ -151,6 +241,7 @@ expression:
                 $$.code = list_concat(list_concat($1.code, $3.code), list_new(new));
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.nextlist = NULL;
         }
         | expression MULTIPLY expression
         {
@@ -161,6 +252,7 @@ expression:
                 $$.code = list_concat(list_concat($1.code, $3.code), list_new(new));
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.nextlist = NULL;
         }
         | expression DIVIDE expression
         {
@@ -171,6 +263,7 @@ expression:
                 $$.code = list_concat(list_concat($1.code, $3.code), list_new(new));
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.nextlist = NULL;
         }
         | '(' expression ')'
         {
@@ -179,6 +272,7 @@ expression:
                 $$.code = $2.code;
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.nextlist = NULL;
         }
 	| IDENTIFIER ASSIGNMENT expression
 	{
@@ -189,6 +283,7 @@ expression:
 		$$.code = list_concat($3.code, list_new(new_quad));
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.nextlist = NULL;
 	}
 	| INCREASE IDENTIFIER
 	{
@@ -202,6 +297,7 @@ expression:
 		$$.code = list_new(new_quad);
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.nextlist = NULL;
 	}
 	| DECREASE IDENTIFIER
 	{
@@ -215,6 +311,7 @@ expression:
 		$$.code = list_new(new_quad);
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.nextlist = NULL;
 	}
         | INTEGER
         {
@@ -226,6 +323,7 @@ expression:
                 $$.code = NULL;
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.nextlist = NULL;
         }
         | IDENTIFIER
         {
@@ -235,6 +333,7 @@ expression:
                 $$.code = NULL;
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.nextlist = NULL;
         }
         | print_function_call
         ;
@@ -252,6 +351,7 @@ condition:
                 // le code est la concaténation des codes de expression1 et expression2
                 $$.code = list_concat($1.code, $3.code);
                 $$.result = NULL;
+                $$.nextlist = NULL;
         }
         | condition BOOL_AND condition
         {
@@ -266,6 +366,7 @@ condition:
                 // le code est le code des deux expressions
                 $$.code = list_concat($1.code, $3.code);
                 $$.result = NULL;
+                $$.nextlist = NULL;
         }
         | BOOL_NOT condition
         {
@@ -275,6 +376,7 @@ condition:
                 $$.code = $2.code;
                 $$.truelist = $2.falselist;
                 $$.falselist = $2.truelist;
+                $$.nextlist = NULL;
         }
         | LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET
         {
@@ -284,6 +386,7 @@ condition:
                 $$.code = $2.code;
                 $$.truelist = $2.truelist;
                 $$.falselist = $2.falselist;
+                $$.nextlist = NULL;
         }
         | IDENTIFIER
         {
@@ -301,7 +404,7 @@ condition:
                 // le code est la concaténation des truelist et falselist
                 $$.code = list_concat(list_new(new_quad_true), list_new(new_quad_false));
                 $$.result = NULL;
-
+                $$.nextlist = NULL;
         }
         | IDENTIFIER relop IDENTIFIER
         {
@@ -344,6 +447,7 @@ condition:
                 // le code est la concaténation des truelist et falselist
                 $$.code = list_concat(list_new(new_quad_true), list_new(new_quad_false));
                 $$.result = NULL;
+                $$.nextlist = NULL;
         }
         ;
 
@@ -392,6 +496,7 @@ print_function_call:
                 $$.code = list_new(new_quad);
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.nextlist = NULL;
         }
         | PRINT_INTEGER LEFT_ROUND_BRACKET INTEGER RIGHT_ROUND_BRACKET
         {
@@ -403,6 +508,7 @@ print_function_call:
                 $$.code = list_new(new_quad);
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.nextlist = NULL;
         }
         | PRINT_INTEGER LEFT_ROUND_BRACKET IDENTIFIER RIGHT_ROUND_BRACKET
         {
@@ -413,6 +519,7 @@ print_function_call:
                 $$.code = list_new(new_quad);
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.nextlist = NULL;
         }
         ;
 

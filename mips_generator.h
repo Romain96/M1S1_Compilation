@@ -39,6 +39,9 @@ void __mips_generate_print_integer(struct mips_generator *, struct quad *);
 void __mips_generate_print_string(struct mips_generator *, struct quad *);
 
 // TODO conditions booléennes
+// génération d'un goto conditionnel
+// génération d'un goto inconditionnel
+
 // TODO structures de contrôle
 // TODO fonctions (+récursives)
 

@@ -41,11 +41,19 @@ semicolon 	        ";"
 comma               ","
 
 print               "print"
+if                  "if"
+else                "else"
+for                 "for"
+while               "while"
 
 %%
 
 {print}f                { return PRINT_STRING; }
 {print}i                { return PRINT_INTEGER; }
+{if}                    { return IF; }
+{else}                  { return ELSE; }
+{for}                   { return FOR; }
+{while}                 { return WHILE; }
 
 {integer}               { 
                             yylval.integer_value = atoi(yytext); 
