@@ -14,6 +14,7 @@ struct list
 // fonctions de manipulation des listes
 struct list *list_new(struct quad *);
 struct list *list_concat(struct list *, struct list *);
+void list_complete(struct list *, int);
 void list_free(struct list **);
 
 #endif

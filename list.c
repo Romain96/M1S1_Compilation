@@ -39,6 +39,19 @@ struct list *list_concat(struct list *l1, struct list *l2)
         return l1;
 }
 
+// complète tous les quads marqués goto par le numéro du label indiqué
+void list_complete(struct list *l, int label)
+{
+        struct list *iterator = l;
+        // parcours de la liste
+        while(iterator != NULL)
+        {
+                if (iterator->current_quad->contain_goto)
+                        iterator->current_quad->goto_quad = label;
+                iterator = iterator->next;
+        }
+}
+
 // libère la mémoire allouée par la liste
 // supprime la liste de pointeurs pas les quads eux-mêmes (voir quad_free)
 void list_free(struct list **l)
