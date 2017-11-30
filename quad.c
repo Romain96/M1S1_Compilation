@@ -7,7 +7,7 @@
 #define QUAD_MAX_LABEL_STRING 42
 
 // génère un nouveau quad
-struct quad *quad_gen(struct quad **quad_list, enum quad_operator op, struct symbol *arg1, struct symbol *arg2, struct symbol *res, bool contain_goto, int goto_quad)
+struct quad *quad_gen(struct quad **quad_list, enum quad_operator op, struct symbol *arg1, struct symbol *arg2, struct symbol *res, bool contain_goto, char *goto_quad)
 {
 	static int quad_number = 0;
 
@@ -73,6 +73,8 @@ void quad_free(struct quad **ql)
 	while (iterator != NULL)
 	{
 		iterator = iterator->next;
+		if (quad_to_free->contain_goto)
+			free(quad_to_free->goto_quad);
 		if (quad_to_free->is_labelled)
 			free(quad_to_free->label_name);
 		free(quad_to_free);
@@ -144,7 +146,7 @@ void quad_print(struct quad *quad_list)
 
 		// affiche le goto s'il y en a un
 		if (quad_list->contain_goto)
-			printf(", goto : %d", quad_list->goto_quad);
+			printf(", goto : %s", quad_list->goto_quad);
 
 		// affichage du label s'il en a un
 		if (quad_list->is_labelled)

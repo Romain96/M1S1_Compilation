@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include "symbol_table.h"
 #include "quad.h"
 #include "list.h"
@@ -40,16 +42,25 @@ struct list *list_concat(struct list *l1, struct list *l2)
 }
 
 // complète tous les quads marqués goto par le numéro du label indiqué
-void list_complete(struct list *l, int label)
+void list_complete(struct list *l, char *label)
 {
         struct list *iterator = l;
         // parcours de la liste
         while(iterator != NULL)
         {
                 if (iterator->current_quad->contain_goto)
-                        iterator->current_quad->goto_quad = label;
+                {
+                        iterator->current_quad->goto_quad = malloc((strlen(label) + 1) * sizeof(char));
+                        iterator->current_quad->goto_quad = strncpy(iterator->current_quad->goto_quad, label, strlen(label) + 1);
+                }
                 iterator = iterator->next;
         }
+}
+
+// complète tous les quads vers le label "label_end"
+void list_complete_to_end(struct list *l)
+{
+        list_complete(l, "label_end");
 }
 
 // libère la mémoire allouée par la liste
