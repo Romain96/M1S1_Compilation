@@ -163,6 +163,25 @@ control_struct:
                 $$.falselist = NULL;
                 $$.result = NULL;
         }
+        | WHILE LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET instruction_block
+        {
+                printf("control_struct -> WHILE (condition)\n");
+                // on complète la truelist de condition par le premier quad du bloc d'instruction
+                quad_label($5.code->current_quad);
+                list_complete($3.truelist, $5.code->current_quad->label_name);
+                // la nextlist est la falselist de la condition
+                $$.nextlist = $3.falselist;
+                // génération du goto inconditionnel
+                quad_label($3.code->current_quad);
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $3.code->current_quad->label_name);
+                // on complète la nextlist du bloc d'instructions avec le premier quad de la condition
+                list_complete($5.nextlist, $3.code->current_quad->label_name);
+                // le code est le tout
+                $$.result = NULL;
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.code = list_concat($3.code, list_concat(list_new(new_quad), $5.code));
+        }
         ;
 
 if_else_goto:

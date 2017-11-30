@@ -57,6 +57,8 @@ struct quad *quad_gen(struct quad **quad_list, enum quad_operator op, struct sym
 // étiquette un quad
 void quad_label(struct quad *q)
 {
+	if (q->is_labelled)
+		return;
 	static int label_number = 0;
 	char label[QUAD_MAX_LABEL_STRING];
 	snprintf(label, QUAD_MAX_LABEL_STRING, "label_%d", label_number);

@@ -474,7 +474,7 @@ void __mips_generate_boolean_eq(struct mips_generator *mips, struct quad *q)
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 2) placer la valeur de arg2 dans le registre $t2
-        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg2->identifier);
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->arg2->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 3) génère un saut conditionnel (bgt $t1, $t2, label)   
@@ -498,7 +498,7 @@ void __mips_generate_boolean_ne(struct mips_generator *mips, struct quad *q)
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 2) placer la valeur de arg2 dans le registre $t2
-        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg2->identifier);
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->arg2->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 3) génère un saut conditionnel (bne $t1, $t2, label)   
@@ -522,7 +522,7 @@ void __mips_generate_boolean_gt(struct mips_generator *mips, struct quad *q)
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 2) placer la valeur de arg2 dans le registre $t2
-        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg2->identifier);
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->arg2->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 3) génère un saut conditionnel (bgt $t1, $t2, label)   
@@ -546,7 +546,7 @@ void __mips_generate_boolean_lt(struct mips_generator *mips, struct quad *q)
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 2) placer la valeur de arg2 dans le registre $t2
-        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg2->identifier);
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->arg2->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 3) génère un saut conditionnel (bgt $t1, $t2, label)   
@@ -570,7 +570,7 @@ void __mips_generate_boolean_ge(struct mips_generator *mips, struct quad *q)
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 2) placer la valeur de arg2 dans le registre $t2
-        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg2->identifier);
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->arg2->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 3) génère un saut conditionnel (bgt $t1, $t2, label)   
@@ -594,7 +594,7 @@ void __mips_generate_boolean_le(struct mips_generator *mips, struct quad *q)
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 2) placer la valeur de arg2 dans le registre $t2
-        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg2->identifier);
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->arg2->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 3) génère un saut conditionnel (bgt $t1, $t2, label)   
