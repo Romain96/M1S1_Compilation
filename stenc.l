@@ -12,18 +12,35 @@
 
 integer             [0-9]|([1-9][0-9]*)
 identifier          [a-z_][a-zA-Z_]*
+string              ["][^\"]*["]
+
+assignment	        "="
+
 plus                "+"
 minus               "-"
 multiply            "*"
 divide              "/"
-assignment	        "="
-semicolon 	        ";"
 increase	        "++"
 decrease	        "--"
-print               "print"
+
+bool_eq             "=="
+bool_ne             "!="
+bool_gt             ">"
+bool_lt             "<"
+bool_ge             ">="
+bool_le             "<="
+bool_and            "&&"
+bool_or             "||"
+bool_not            "!"
+
 left_round_bracket  "("
 right_round_bracket ")"
-string              ["][^\"]*["]
+left_brace          "{"
+right_brace         "}"
+semicolon 	        ";"
+comma               ","
+
+print               "print"
 
 %%
 
@@ -54,16 +71,33 @@ string              ["][^\"]*["]
 				            yylval.string[i] = '\0';
                             return STRING; 
                         }
+
+{assignment}	        { return ASSIGNMENT; }
+
 {plus}                  { return PLUS; }
 {minus}                 { return MINUS; }
 {multiply}              { return MULTIPLY; }
 {divide}                { return DIVIDE; }
 {increase}	            { return INCREASE; }
 {decrease}	            { return DECREASE; }
-{assignment}	        { return ASSIGNMENT; }
+
+{bool_eq}               { return BOOL_EQ; }
+{bool_ne}               { return BOOL_NE; }
+{bool_gt}               { return BOOL_GT; }
+{bool_lt}               { return BOOL_LT; }
+{bool_ge}               { return BOOL_GE; }
+{bool_le}               { return BOOL_LE; }
+{bool_and}              { return BOOL_AND; }
+{bool_or}               { return BOOL_OR; }
+{bool_not}              { return BOOL_NOT; }
+
+{comma}                 { return COMMA; }
 {semicolon}	            { return SEMICOLON; }
+{left_brace}            { return LEFT_BRACE; }
+{right_brace}           { return RIGHT_BRACE; }
 {left_round_bracket}    { return LEFT_ROUND_BRACKET; }
 {right_round_bracket}   { return RIGHT_ROUND_BRACKET; }
+
 \t|\n|\r                { return yytext[0]; }
 [ ]                     {  }
 .                       { printf("lexical error : char %s not recognized\n", yytext); exit(1); }

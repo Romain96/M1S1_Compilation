@@ -1,5 +1,6 @@
 %{
         #include <stdio.h>
+        #include <stdlib.h>
         #include <stdbool.h>
         #include "symbol_table.h"
         #include "quad.h"
@@ -17,9 +18,12 @@
 {
         int integer_value;
         char *string;
+        enum relop_enum {EQ, NE, GT, LT, GE, LE} relop_code;
         struct codegen {
                 struct symbol *result;
                 struct list *code;
+                struct list *truelist;
+                struct list *falselist;
         }gencode;
 }
 
@@ -27,32 +31,60 @@
 %token <string> IDENTIFIER STRING
 %token PLUS MINUS MULTIPLY DIVIDE
 %token ASSIGNMENT
-%token SEMICOLON
+%token COMMA SEMICOLON
 %token INCREASE DECREASE
 %token PRINT_STRING PRINT_INTEGER
-%token LEFT_ROUND_BRACKET RIGHT_ROUND_BRACKET
+%token LEFT_ROUND_BRACKET RIGHT_ROUND_BRACKET LEFT_BRACE RIGHT_BRACE
+%token BOOL_EQ BOOL_NE BOOL_GT BOOL_LT BOOL_GE BOOL_LE
+%token BOOL_AND BOOL_OR BOOL_NOT
 
 %type <gencode> line
-%type <gencode> expression
+%type <gencode> instruction
 %type <gencode> expression_list
+%type <gencode> expression
+%type <gencode> condition
+%type <relop_code> relop
 %type <gencode> print_function_call
 
 %left PLUS MINUS
 %left MULTIPLY DIVIDE
 %right ASSIGNMENT
+%left BOOL_AND BOOL_OR
+%nonassoc BOOL_NOT
 
 %start line
 
 %%
 
 line:
-        expression_list '\n'
+        instruction '\n'
         {
                 printf("line -> expression_list\n");
                 $$.result = $1.result;
                 $$.code = $1.code;
+                $$.truelist = $1.truelist;
+                $$.falselist = $1.falselist;
                 printf("Match !!!\n");
                 return 0;
+        }
+        ;
+
+instruction:
+        expression_list
+        {
+                printf("instruction -> expression_list\n");
+                $$.result = $1.result;
+                $$.code = $1.code;
+                $$.truelist = $1.truelist;
+                $$.falselist = $1.falselist;
+        }
+        | condition
+        {
+                printf("instruction -> condition\n");
+                $$.result = $1.result;
+                $$.code = $1.code;
+                $$.truelist = $1.truelist;
+                $$.falselist = $1.falselist;
         }
         ;
 
@@ -68,11 +100,13 @@ expression_list:
 		printf("expression_list -> expression SEMICOLON\n");
 		$$.code = $1.code;
 		$$.result = NULL;
+                $$.truelist = $1.truelist;
+                $$.falselist = $1.falselist;
 	}
 	;
 
 expression:
-	IDENTIFIER INCREASE
+        IDENTIFIER INCREASE
 	{
 		printf("expression -> IDENTIFIER INCREASE (low priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $1);
@@ -82,6 +116,8 @@ expression:
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_PLUS, id, incr, res, false, -1);
 		$$.result = res;
 		$$.code = list_new(new_quad);
+                $$.truelist = NULL;
+                $$.falselist = NULL;
 	}
 	| IDENTIFIER DECREASE
 	{
@@ -93,6 +129,8 @@ expression:
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_MINUS, id, incr, res, false, -1);
 		$$.result = res;
 		$$.code = list_new(new_quad);
+                $$.truelist = NULL;
+                $$.falselist = NULL;
 	}
         | expression PLUS expression
         {
@@ -101,6 +139,8 @@ expression:
                 struct quad *new = quad_gen(&quad_list, QUAD_PLUS, $1.result, $3.result, res, false, -1);
                 $$.result = res;
                 $$.code = list_concat(list_concat($1.code, $3.code), list_new(new));
+                $$.truelist = NULL;
+                $$.falselist = NULL;
         }
         | expression MINUS expression
         {
@@ -109,6 +149,8 @@ expression:
                 struct quad *new = quad_gen(&quad_list, QUAD_MINUS, $1.result, $3.result, res, false, -1);
                 $$.result = res;
                 $$.code = list_concat(list_concat($1.code, $3.code), list_new(new));
+                $$.truelist = NULL;
+                $$.falselist = NULL;
         }
         | expression MULTIPLY expression
         {
@@ -117,6 +159,8 @@ expression:
                 struct quad *new = quad_gen(&quad_list, QUAD_MULTIPLY, $1.result, $3.result, res, false, -1);
                 $$.result = res;
                 $$.code = list_concat(list_concat($1.code, $3.code), list_new(new));
+                $$.truelist = NULL;
+                $$.falselist = NULL;
         }
         | expression DIVIDE expression
         {
@@ -125,12 +169,16 @@ expression:
                 struct quad *new = quad_gen(&quad_list, QUAD_DIVIDE, $1.result, $3.result, res, false, -1);
                 $$.result = res;
                 $$.code = list_concat(list_concat($1.code, $3.code), list_new(new));
+                $$.truelist = NULL;
+                $$.falselist = NULL;
         }
         | '(' expression ')'
         {
                 printf("expression -> ( expression )\n");
                 $$.result = $2.result;
                 $$.code = $2.code;
+                $$.truelist = NULL;
+                $$.falselist = NULL;
         }
 	| IDENTIFIER ASSIGNMENT expression
 	{
@@ -139,6 +187,8 @@ expression:
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $3.result, NULL, false, -1);
 		$$.result = id;
 		$$.code = list_concat($3.code, list_new(new_quad));
+                $$.truelist = NULL;
+                $$.falselist = NULL;
 	}
 	| INCREASE IDENTIFIER
 	{
@@ -150,6 +200,8 @@ expression:
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_PLUS, id, incr, res, false, -1);
 		$$.result = res;
 		$$.code = list_new(new_quad);
+                $$.truelist = NULL;
+                $$.falselist = NULL;
 	}
 	| DECREASE IDENTIFIER
 	{
@@ -161,6 +213,8 @@ expression:
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_MINUS, id, decr, res, false, -1);
 		$$.result = res;
 		$$.code = list_new(new_quad);
+                $$.truelist = NULL;
+                $$.falselist = NULL;
 	}
         | INTEGER
         {
@@ -170,7 +224,8 @@ expression:
                 new->int_value = $1;
                 $$.result = new;
                 $$.code = NULL;
-                
+                $$.truelist = NULL;
+                $$.falselist = NULL;
         }
         | IDENTIFIER
         {
@@ -178,34 +233,186 @@ expression:
                 struct symbol *id = symbol_lookup(symbol_table, $1);
                 $$.result = id;
                 $$.code = NULL;
+                $$.truelist = NULL;
+                $$.falselist = NULL;
         }
         | print_function_call
+        ;
+
+condition:
+        condition BOOL_OR condition
+        {
+                printf("condition -> condition BOOL_OR condition\n");
+                // on complète la falselist de expression1 par le premier quad de expression2
+                list_complete($1.falselist, $3.code->current_quad->id);
+                // la falselist est la falselist de expression2
+                $$.falselist = $3.falselist;
+                // la truelist est la concaténation des truelist de expression1 et expression2
+                $$.truelist = list_concat($1.truelist, $3.truelist);
+                // le code est la concaténation des codes de expression1 et expression2
+                $$.code = list_concat($1.code, $3.code);
+                $$.result = NULL;
+        }
+        | condition BOOL_AND condition
+        {
+                printf("condition -> condition BOOL_OR condition\n");
+                printf("test %d\n", $3.code->current_quad->id);
+                // on complète la truelist de expression1 par le numéro du premier quad de expression2
+                list_complete($1.truelist, $3.code->current_quad->id);
+                // la falselist est la concaténation des falselist de expression1 et expression2
+                $$.falselist = list_concat($1.falselist, $3.falselist);
+                // la truelist est la truelist de expression2
+                $$.truelist = $3.truelist;
+                // le code est le code des deux expressions
+                $$.code = list_concat($1.code, $3.code);
+                $$.result = NULL;
+        }
+        | BOOL_NOT condition
+        {
+                printf("condition -> BOOL_NOT condition\n");
+                // on inverse simplement les truelist et falselist (code et result inchangés)
+                $$.result = $2.result;
+                $$.code = $2.code;
+                $$.truelist = $2.falselist;
+                $$.falselist = $2.truelist;
+        }
+        | LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET
+        {
+                printf("condition -> LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET\n");
+                // rien de spécial on transmet juste les listes
+                $$.result = $2.result;
+                $$.code = $2.code;
+                $$.truelist = $2.truelist;
+                $$.falselist = $2.falselist;
+        }
+        | IDENTIFIER
+        {
+                printf("condition -> IDENTIFIER\n");
+                // recherche du symbole dans la table
+                struct symbol *id = symbol_lookup(symbol_table, $1);
+                // génération du goto conditionnel : if ID goto ?
+                struct quad *new_quad_true = quad_gen(&quad_list, QUAD_NO_OP, id, NULL, NULL, true, -1);
+                // génération du goto inconditionnel : goto ?
+                struct quad *new_quad_false = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, -1);
+                // la truelist est le quad contenant le goto conditionnel
+                $$.truelist = list_new(new_quad_true);
+                // la falselist est le quad contenant le goto inconditionnel
+                $$.falselist = list_new(new_quad_false);
+                // le code est la concaténation des truelist et falselist
+                $$.code = list_concat(list_new(new_quad_true), list_new(new_quad_false));
+                $$.result = NULL;
+
+        }
+        | IDENTIFIER relop IDENTIFIER
+        {
+                printf("condition -> IDENTIFIER relop IDENTIFIER\n");
+                // recherche des deux symboles dans la table
+                struct symbol *id1 = symbol_lookup(symbol_table, $1);
+                struct symbol *id2 = symbol_lookup(symbol_table, $3);
+                // génération du goto conditionnel : if ID1 == ID2 goto ?
+                struct quad *new_quad_true;
+                switch ($2)
+                {
+                        case EQ:
+                                new_quad_true = quad_gen(&quad_list, QUAD_EQ, id1, id2, NULL, true, -1);
+                                break;
+                        case NE:
+                                new_quad_true = quad_gen(&quad_list, QUAD_NE, id1, id2, NULL, true, -1);
+                                break;
+                        case GT:
+                                new_quad_true = quad_gen(&quad_list, QUAD_GT, id1, id2, NULL, true, -1);
+                                break;
+                        case LT:
+                                new_quad_true = quad_gen(&quad_list, QUAD_LT, id1, id2, NULL, true, -1);
+                                break;
+                        case GE:
+                                new_quad_true = quad_gen(&quad_list, QUAD_GE, id1, id2, NULL, true, -1);
+                                break;
+                        case LE:
+                                new_quad_true = quad_gen(&quad_list, QUAD_LE, id1, id2, NULL, true, -1);
+                                break;
+                        default:
+                                fprintf(stderr, "relop non reconnu...\n");
+                                exit(1);
+                }
+                // génération du goto inconditionnel : goto ?
+                struct quad *new_quad_false = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, -1);
+                // la truelist est le quad contenant le goto conditionnel
+                $$.truelist = list_new(new_quad_true);
+                // la falselist est le quad contenant le goto inconditionnel
+                $$.falselist = list_new(new_quad_false);
+                // le code est la concaténation des truelist et falselist
+                $$.code = list_concat(list_new(new_quad_true), list_new(new_quad_false));
+                $$.result = NULL;
+        }
+        ;
+
+relop:
+        BOOL_EQ
+        {
+                printf("relop -> BOOL_EQ\n");
+                $$ = EQ;
+        }
+        | BOOL_NE
+        {
+                printf("relop ->  BOOL_NE\n");
+                $$ = NE;
+        }
+        | BOOL_GT
+        {
+                printf("relop -> BOOL_GT\n");
+                $$ = GT;
+        }
+        | BOOL_LT
+        {
+                printf("relop -> BOOL_LT\n");
+                $$ = LT;
+        }
+        | BOOL_GE
+        {
+                printf("relop -> BOOL_GE\n");
+                $$ = GE;
+        }
+        | BOOL_LE
+        {
+                printf("relop -> BOOL_LE\n");
+                $$ = LE;
+        }
         ;
 
 print_function_call:
         PRINT_STRING LEFT_ROUND_BRACKET STRING RIGHT_ROUND_BRACKET
         {
+                printf("print_function_call -> PRINT_STRING LEFT_ROUND_BRACKET STRING RIGHT_ROUND_BRACKET\n");
                 struct symbol *new = symbol_new_temp(&symbol_table);
 		new->string_value = $3;
 		new->is_string_litteral = true;
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_PRINTF, new, NULL, NULL, false, -1);
                 $$.result = NULL;
                 $$.code = list_new(new_quad);
+                $$.truelist = NULL;
+                $$.falselist = NULL;
         }
         | PRINT_INTEGER LEFT_ROUND_BRACKET INTEGER RIGHT_ROUND_BRACKET
         {
+                printf("print_function_call -> PRINT_INTEGER LEFT_ROUND_BRACKET INTEGER RIGHT_ROUND_BRACKET\n");
                 struct symbol *new = symbol_new_temp(&symbol_table);
                 new->int_value = $3;
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_PRINTI, new, NULL, NULL, false, -1);
                 $$.result = NULL;
                 $$.code = list_new(new_quad);
+                $$.truelist = NULL;
+                $$.falselist = NULL;
         }
         | PRINT_INTEGER LEFT_ROUND_BRACKET IDENTIFIER RIGHT_ROUND_BRACKET
         {
+                printf("print_function_call -> PRINT_STRING LEFT_ROUND_BRACKET IDENTIFIER RIGHT_ROUND_BRACKET\n");
                 struct symbol *id = symbol_lookup(symbol_table, $3);
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_PRINTI, id, NULL, NULL, false, -1);
                 $$.result = NULL;
                 $$.code = list_new(new_quad);
+                $$.truelist = NULL;
+                $$.falselist = NULL;
         }
         ;
 
