@@ -118,15 +118,6 @@ statement:
                 $$.falselist = $1.falselist;
                 $$.nextlist = $1.nextlist;
         }
-        | condition
-        {
-                printf("statement -> condition\n");
-                $$.result = $1.result;
-                $$.code = $1.code;
-                $$.truelist = $1.truelist;
-                $$.falselist = $1.falselist;
-                $$.nextlist = $1.nextlist;
-        }
         ;
 
 control_struct:
