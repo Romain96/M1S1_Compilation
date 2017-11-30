@@ -64,11 +64,7 @@ print               "print"
                             return IDENTIFIER; 
                         }
 {string}                { 
-				            yylval.string = malloc((strlen(yytext) - 1) * sizeof(char));
-				            int i;
-				            for (i = 0; i < strlen(yytext) - 2; i++)
-					            yylval.string[i] = yytext[i+1];
-				            yylval.string[i] = '\0';
+				            yylval.string = strdup(yytext);
                             return STRING; 
                         }
 
