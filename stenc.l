@@ -1,5 +1,6 @@
 %{
     #include <stdio.h>
+    #include <string.h>
     #include <stdlib.h>
     #include <string.h>
     #include "symbol_table.h"
@@ -60,13 +61,10 @@ while               "while"
                             return INTEGER; 
                         }
 {identifier}            { 
-                            yylval.string = malloc((strlen(yytext) + 2) * sizeof(char));
-                            // préfixe
-                            yylval.string[0] = '@';
-                            int i;
-                            for (i = 0; i < strlen(yytext) + 1; i++)
-                                yylval.string[i+1] = yytext[i];
-                            yylval.string[i+1] = '\0';
+                            char user_identifier_prefix[] = "__mips__";
+                            yylval.string = malloc((strlen(yytext) + strlen(user_identifier_prefix) + 1) * sizeof(char));
+                            strcat(yylval.string, user_identifier_prefix);
+                            strcat(yylval.string, yytext);
                             if (symbol_lookup(symbol_table, yylval.string) == NULL)
                                 symbol_add(&symbol_table, yylval.string); 
                             return IDENTIFIER; 
