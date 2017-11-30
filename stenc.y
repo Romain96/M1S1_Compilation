@@ -85,6 +85,7 @@ statement_list:
                 $$.falselist = list_concat($1.falselist, $2.falselist);
                 quad_label($2.code->current_quad);
                 list_complete($1.nextlist, $2.code->current_quad->label_name);
+                list_complete_to_end($2.nextlist);
                 $$.nextlist = NULL;
         }
         | statement

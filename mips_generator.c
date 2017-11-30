@@ -140,6 +140,10 @@ void __mips_write_quad_list(struct mips_generator *mips)
         char text_segment[] = ".text\n";
         fwrite(&text_segment, sizeof(char), strlen(text_segment), mips->output_file);
 
+        // définir main en tant que symbole global
+        char main_global[] = ".globl main\n";
+        fwrite(&main_global, sizeof(char), strlen(main_global), mips->output_file);
+
         // TODO prendre en compte le main mieux que ça...
         char main_routine[] = "main:\n";
         fwrite(&main_routine, sizeof(char), strlen(main_routine), mips->output_file);
@@ -198,7 +202,7 @@ void __mips_write_quad_list(struct mips_generator *mips)
         }
 
         // termine le programme en appellant le syscall de terminaison
-        char prgramm_end[] = "li $v0, 10\nsyscall\n";
+        char prgramm_end[] = "label_end: li $v0, 10\nsyscall\n";
         fwrite(&prgramm_end, sizeof(char), strlen(prgramm_end), mips->output_file);
 
         printf("quad list written successfully :)\n");
