@@ -148,10 +148,19 @@ void __mips_write_quad_list(struct mips_generator *mips)
         struct quad *iterator = mips->quad_list;
         while (iterator != NULL)
         {
+                // Avant d'écrire les instructions il faut écrire le nom du label si le quad en a un
+                if (iterator->is_labelled)
+                {
+                        char line_to_write[MIPS_MAX_LINE_SIZE];
+                        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "%s: ", iterator->label_name);
+                        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+                }
+
+                // si le quad contient un goto il est traité séparément
                 if (iterator->contain_goto == true)
                 {
-                        // TODO génération d'un goto
-                        printf("goto pas encore pris en compte :(\n");
+                        // génère un goto (in)conditionnel et éventuellement une comparaison booléenne
+                        __mips_generate_goto(mips, iterator);
                 }
                 else
                 {
@@ -172,30 +181,6 @@ void __mips_write_quad_list(struct mips_generator *mips)
                                         break;
                                 case QUAD_ASSIGNMENT:
                                         __mips_generate_assignment(mips, iterator);
-                                        break;
-                                case QUAD_EQ:
-                                        // TODO booléens
-                                        printf("booléens pas encore pris en compte :(\n");
-                                        break;
-                                case QUAD_NE:
-                                        // TODO booléens
-                                        printf("booléens pas encore pris en compte :(\n");
-                                        break;
-                                case QUAD_GE:
-                                        // TODO booléens
-                                        printf("booléens pas encore pris en compte :(\n");
-                                        break;
-                                case QUAD_GT:
-                                        // TODO booléens
-                                        printf("booléens pas encore pris en compte :(\n");
-                                        break;
-                                case QUAD_LE:
-                                        // TODO booléens
-                                        printf("booléens pas encore pris en compte :(\n");
-                                        break;
-                                case QUAD_LT:
-                                        // TODO booléens
-                                        printf("booléens pas encore pris en compte :(\n");
                                         break;
                                 case QUAD_PRINTI:
                                         __mips_generate_print_integer(mips, iterator);
@@ -411,5 +396,204 @@ void __mips_generate_print_string(struct mips_generator *mips, struct quad *q)
 
         // 3/ appel à syscall (syscall)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "syscall\n");
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+}
+
+//===================================================================
+// FONCTION DE GENERATION DES GOTO CONDITIONNELS ET INCONDITIONNELS
+//===================================================================
+
+// Fonction             : __mips_generate_goto
+// Argument(s)          : - mips : une structure mips_generator générée par mips_setup
+//                        - quad : le quad contenant la repésentation de l'instruction à générer
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : génère le code MIPS des goto conditionnels et inconditionnels
+void __mips_generate_goto(struct mips_generator *mips, struct quad *q)
+{
+        char line_to_write[MIPS_MAX_LINE_SIZE];
+        // si le quad est un goto inconditionnel, on génère juste de goto
+        if (q->op == QUAD_NO_OP)
+        {
+                // génération du goto label (b label_name)
+                snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "b %s\n", q->goto_quad);
+                fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+        }
+        // sinon on génère la comparaison nécessaire puis le goto
+        else
+        {
+                switch (q->op)
+                {
+                        case QUAD_EQ:
+                                __mips_generate_boolean_eq(mips, q);
+                                break;
+                        case QUAD_NE:
+                                __mips_generate_boolean_ne(mips, q);
+                                break;
+                        case QUAD_GT:
+                                __mips_generate_boolean_gt(mips, q);
+                                break;
+                        case QUAD_LT:
+                                __mips_generate_boolean_lt(mips, q);
+                                break;
+                        case QUAD_GE:
+                                __mips_generate_boolean_ge(mips, q);
+                                break;
+                        case QUAD_LE:
+                                __mips_generate_boolean_le(mips, q);
+                                break;
+                        default:
+                                fprintf(stderr, "quad is not supposed to be here...\n");
+                                exit(EXIT_FAILURE);
+                }
+        }
+}
+
+//==================================================================================
+// FONCTIONS DE GENERATION DES CONDITIONS BOOLEENNES ET DES STRUCTURES DE CONTROLE
+//==================================================================================
+
+// Fonction             : __mips_generate_boolean_eq
+// Argument(s)          : - mips : une structure mips_generator générée par mips_setup
+//                        - quad : le quad contenant la repésentation de l'instruction à générer
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : génère le code MIPS d'une comparaison de type ==
+void __mips_generate_boolean_eq(struct mips_generator *mips, struct quad *q)
+{
+        char line_to_write[MIPS_MAX_LINE_SIZE];
+
+        // 1) placer la valeur de arg1 dans le registre $t1
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 2) placer la valeur de arg2 dans le registre $t2
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg2->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 3) génère un saut conditionnel (bgt $t1, $t2, label)   
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "beq $t1, $t2, %s\n", q->goto_quad);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+}
+
+// Fonction             : __mips_generate_boolean_ne
+// Argument(s)          : - mips : une structure mips_generator générée par mips_setup
+//                        - quad : le quad contenant la repésentation de l'instruction à générer
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : génère le code MIPS d'une comparaison de type !=
+void __mips_generate_boolean_ne(struct mips_generator *mips, struct quad *q)
+{
+        char line_to_write[MIPS_MAX_LINE_SIZE];
+
+        // 1) placer la valeur de arg1 dans le registre $t1
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 2) placer la valeur de arg2 dans le registre $t2
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg2->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 3) génère un saut conditionnel (bne $t1, $t2, label)   
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "bne $t1, $t2, %s\n", q->goto_quad);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+}
+
+// Fonction             : __mips_generate_boolean_gt
+// Argument(s)          : - mips : une structure mips_generator générée par mips_setup
+//                        - quad : le quad contenant la repésentation de l'instruction à générer
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : génère le code MIPS d'une comparaison de type >
+void __mips_generate_boolean_gt(struct mips_generator *mips, struct quad *q)
+{
+        char line_to_write[MIPS_MAX_LINE_SIZE];
+
+        // 1) placer la valeur de arg1 dans le registre $t1
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 2) placer la valeur de arg2 dans le registre $t2
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg2->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 3) génère un saut conditionnel (bgt $t1, $t2, label)   
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "bgt $t1, $t2, %s\n", q->goto_quad);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+}
+
+// Fonction             : __mips_generate_boolean_lt
+// Argument(s)          : - mips : une structure mips_generator générée par mips_setup
+//                        - quad : le quad contenant la repésentation de l'instruction à générer
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : génère le code MIPS d'une comparaison de type <
+void __mips_generate_boolean_lt(struct mips_generator *mips, struct quad *q)
+{
+        char line_to_write[MIPS_MAX_LINE_SIZE];
+
+        // 1) placer la valeur de arg1 dans le registre $t1
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 2) placer la valeur de arg2 dans le registre $t2
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg2->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 3) génère un saut conditionnel (bgt $t1, $t2, label)   
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "blt $t1, $t2, %s\n", q->goto_quad);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+}
+
+// Fonction             : __mips_generate_boolean_ge
+// Argument(s)          : - mips : une structure mips_generator générée par mips_setup
+//                        - quad : le quad contenant la repésentation de l'instruction à générer
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : génère le code MIPS d'une comparaison de type >=
+void __mips_generate_boolean_ge(struct mips_generator *mips, struct quad *q)
+{
+        char line_to_write[MIPS_MAX_LINE_SIZE];
+
+        // 1) placer la valeur de arg1 dans le registre $t1
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 2) placer la valeur de arg2 dans le registre $t2
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg2->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 3) génère un saut conditionnel (bgt $t1, $t2, label)   
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "bge $t1, $t2, %s\n", q->goto_quad);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+}
+
+// Fonction             : __mips_generate_boolean_le
+// Argument(s)          : - mips : une structure mips_generator générée par mips_setup
+//                        - quad : le quad contenant la repésentation de l'instruction à générer
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : génère le code MIPS d'une comparaison de type <=
+void __mips_generate_boolean_le(struct mips_generator *mips, struct quad *q)
+{
+        char line_to_write[MIPS_MAX_LINE_SIZE];
+
+        // 1) placer la valeur de arg1 dans le registre $t1
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 2) placer la valeur de arg2 dans le registre $t2
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg2->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 3) génère un saut conditionnel (bgt $t1, $t2, label)   
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "ble $t1, $t2, %s\n", q->goto_quad);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 }

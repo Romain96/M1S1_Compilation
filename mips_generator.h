@@ -38,11 +38,15 @@ void __mips_generate_print_integer(struct mips_generator *, struct quad *);
 // génération d'un affichage d'une chaîne de caractères
 void __mips_generate_print_string(struct mips_generator *, struct quad *);
 
-// TODO conditions booléennes
-// génération d'un goto conditionnel
-// génération d'un goto inconditionnel
+// génération des goto (conditionnels et inconditionnels)
+void __mips_generate_goto(struct mips_generator *, struct quad *);
 
-// TODO structures de contrôle
-// TODO fonctions (+récursives)
+// fonctions de génération des conditions booléennes et des structures de contrôle
+void __mips_generate_boolean_eq(struct mips_generator *, struct quad *);
+void __mips_generate_boolean_ne(struct mips_generator *, struct quad *);
+void __mips_generate_boolean_gt(struct mips_generator *, struct quad *);
+void __mips_generate_boolean_lt(struct mips_generator *, struct quad *);
+void __mips_generate_boolean_ge(struct mips_generator *, struct quad *);
+void __mips_generate_boolean_le(struct mips_generator *, struct quad *);
 
 #endif
