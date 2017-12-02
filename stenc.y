@@ -40,6 +40,7 @@
 %token BOOL_EQ BOOL_NE BOOL_GT BOOL_LT BOOL_GE BOOL_LE
 %token BOOL_AND BOOL_OR BOOL_NOT
 %token IF ELSE FOR WHILE
+%token TYPE_INT TYPE_INT_ARRAY TYPE_STENCIL
 
 %type <gencode> program
 %type <gencode> statement_list
@@ -258,7 +259,6 @@ for_iterator:
         }
         ;
 
-
 instruction_block:
         LEFT_BRACE statement_list RIGHT_BRACE
         {
@@ -353,10 +353,29 @@ expression:
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
         }
+        | TYPE_INT IDENTIFIER ASSIGNMENT expression
+        {
+                printf("expression -> TYPE_INT IDENTIFIER ASSIGNMENT expression\n");
+		struct symbol *id = symbol_lookup(symbol_table, $2);
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $4.result, NULL, false, NULL);
+                // maintenant l'id est déclaré
+                id->is_declared = true;
+		$$.result = id;
+		$$.code = list_concat($4.code, list_new(new_quad));
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.nextlist = NULL;
+        }
 	| IDENTIFIER ASSIGNMENT expression
 	{
 		printf("expression -> IDENTIFIER ASSIGNMENT expression\n");
 		struct symbol *id = symbol_lookup(symbol_table, $1);
+                // l'id doit avoir été déclaré précédemment
+                if (!id->is_declared)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier);
+                        exit(1);
+                }
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $3.result, NULL, false, NULL);
 		$$.result = id;
 		$$.code = list_concat($3.code, list_new(new_quad));

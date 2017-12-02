@@ -11,6 +11,8 @@ struct symbol *symbol_alloc()
 	struct symbol *new = malloc(sizeof(struct symbol));
 	new->identifier = NULL;
 	new->is_constant = false;
+	new->is_declared = false;
+	new->is_set = false;
 	new->is_string_litteral = false;
 	new->next = NULL;
 	return new;
@@ -91,6 +93,14 @@ void symbol_print(struct symbol *symbol)
 			printf("true, ");
 		else
 			printf("false, ");
+		if (symbol->is_declared)
+			printf("is_declared : true, ");
+		else
+			printf("is_declared : false :");
+		if (symbol->is_declared)
+			printf("is_set : true, ");
+		else
+			printf("is_set : false :");
 		if (symbol->is_string_litteral)
 			printf("string value : %s\n", symbol->string_value);
 		else

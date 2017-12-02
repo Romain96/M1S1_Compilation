@@ -47,14 +47,22 @@ else                "else"
 for                 "for"
 while               "while"
 
+type_int            "int"
+type_stencil        "stencil"
+
 %%
 
 {print}f                { return PRINT_STRING; }
 {print}i                { return PRINT_INTEGER; }
+
 {if}                    { return IF; }
 {else}                  { return ELSE; }
 {for}                   { return FOR; }
 {while}                 { return WHILE; }
+
+{type_int}              { return TYPE_INT; }
+{type_int}("["{integer}"]")*                    { return TYPE_INT_ARRAY; }
+{type_stencil}"{"{integer}{comma}{integer}"}"   { return TYPE_STENCIL; }
 
 {integer}               { 
                             yylval.integer_value = atoi(yytext); 

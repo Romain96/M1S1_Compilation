@@ -8,6 +8,8 @@ struct symbol
 {
 	char *identifier;
 	bool is_constant;
+	bool is_declared;
+	bool is_set;
 	bool is_string_litteral;
 	union {
 		int int_value;		// prend en compte les variables entères
