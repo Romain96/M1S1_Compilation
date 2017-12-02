@@ -19,6 +19,7 @@
         int integer_value;
         char *string;
         enum relop_enum {EQ, NE, GT, LT, GE, LE} relop_code;
+        enum for_iterator_enum {INCR, DECR} for_iterator_code;
         struct codegen {
                 struct symbol *result;
                 struct list *code;
@@ -44,7 +45,8 @@
 %type <gencode> statement_list
 %type <gencode> statement
 %type <gencode> control_struct
-%type <gencode> if_else_goto
+%type <gencode> if_else_goto for_init
+%type <for_iterator_code> for_iterator
 %type <gencode> instruction_block
 %type <gencode> expression
 %type <gencode> condition
@@ -182,6 +184,41 @@ control_struct:
                 $$.falselist = NULL;
                 $$.code = list_concat($3.code, list_concat(list_new(new_quad), $5.code));
         }
+        | FOR LEFT_ROUND_BRACKET for_init SEMICOLON condition SEMICOLON for_iterator RIGHT_ROUND_BRACKET instruction_block
+        {
+                printf("control_struct -> FOR (for_init; condition; for_iterator)\n");
+                // on complète la truelist de condition par le premier quad du bloc d'instructions
+                quad_label($9.code->current_quad);
+                list_complete($5.truelist, $9.code->current_quad->label_name);
+                // la nextlist est la falselist de condition
+                $$.nextlist = $5.falselist;
+                // on génère l'incrémentation/décrémentation
+                struct quad *iterator;
+                struct symbol *incr = symbol_new_temp(&symbol_table);
+                struct symbol *res = symbol_new_temp(&symbol_table);
+                incr->int_value = 1;
+                switch ($7)
+                {
+                        case INCR:	                
+	                        
+		                iterator = quad_gen(&quad_list, QUAD_PLUS, $3.result, incr, res, false, NULL);
+                                break;
+                        case DECR:
+                                iterator = quad_gen(&quad_list, QUAD_MINUS, $3.result, incr, res, false, NULL);
+                                break;
+                        default:
+                                fprintf(stderr, "ni incr ni decr ?\n");
+                                exit(1);
+                }
+                // et le goto inconditionnel vers la condition
+                quad_label($5.code->current_quad);
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $5.code->current_quad->label_name);
+                // le code est le tout
+                $$.code = list_concat($3.code, list_concat($5.code, list_concat($9.code, list_concat(list_new(iterator), list_new(new_quad)))));
+                $$.result = NULL;
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+        }
         ;
 
 if_else_goto:
@@ -195,6 +232,32 @@ if_else_goto:
                 $$.nextlist = list_new(new_quad);
         }
         ;
+
+for_init:
+        IDENTIFIER ASSIGNMENT expression
+	{
+		printf("for_init -> IDENTIFIER ASSIGNMENT expression\n");
+		struct symbol *id = symbol_lookup(symbol_table, $1);
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $3.result, NULL, false, NULL);
+		$$.result = id;
+		$$.code = list_concat($3.code, list_new(new_quad));
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.nextlist = NULL;
+	}
+        ;
+
+for_iterator:
+        IDENTIFIER INCREASE
+        {
+                $$ = INCR;
+        }
+        | IDENTIFIER DECREASE
+        {
+                $$ = DECR;
+        }
+        ;
+
 
 instruction_block:
         LEFT_BRACE statement_list RIGHT_BRACE
