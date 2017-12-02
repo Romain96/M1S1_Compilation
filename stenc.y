@@ -70,9 +70,9 @@ program:
                 printf("program -> statement_list\n");
                 $$.result = $1.result;
                 $$.code = $1.code;
-                $$.truelist = $1.truelist;
-                $$.falselist = $1.falselist;
-                $$.nextlist = $1.nextlist;
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.nextlist = NULL;
                 printf("Match !!!\n");
                 return 0;
         }
@@ -84,11 +84,14 @@ statement_list:
                 printf("statement_list -> statement_list statement\n");
                 $$.result = $1.result;
                 $$.code = list_concat($1.code, $2.code);
-                $$.truelist = list_concat($1.truelist, $2.truelist);
-                $$.falselist = list_concat($1.falselist, $2.falselist);
-                quad_label($2.code->current_quad);
-                list_complete($1.nextlist, $2.code->current_quad->label_name);
-                list_complete_to_end($2.nextlist);
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                if ($1.code != NULL && $2.code != NULL)
+                {
+                        quad_label($2.code->current_quad);
+                        list_complete($1.nextlist, $2.code->current_quad->label_name);
+                        list_complete_to_end($2.nextlist);
+                }
                 $$.nextlist = NULL;
         }
         | statement
@@ -97,7 +100,7 @@ statement_list:
                 $$.result = $1.result;
                 $$.code = $1.code;
                 $$.truelist = $1.truelist;
-                $$.falselist = $1.falselist;
+                $$.falselist = $1.truelist;
                 list_complete_to_end($1.nextlist);
                 $$.nextlist = NULL;
         }
@@ -108,7 +111,7 @@ statement:
 	{
 		printf("statement -> expression SEMICOLON\n");
 		$$.code = $1.code;
-		$$.result = NULL;
+		$$.result = $1.result;
                 $$.truelist = $1.truelist;
                 $$.falselist = $1.falselist;
                 $$.nextlist = $1.nextlist;
@@ -239,6 +242,14 @@ for_init:
 	{
 		printf("for_init -> IDENTIFIER ASSIGNMENT expression\n");
 		struct symbol *id = symbol_lookup(symbol_table, $1);
+                // l'id doit être déclaré
+                if (!id->is_declared)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
+                        exit(1);
+                }
+                // l'id est set (qu'il l'ai été ou non)
+                id->is_set = true;
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $3.result, NULL, false, NULL);
 		$$.result = id;
 		$$.code = list_concat($3.code, list_new(new_quad));
@@ -276,6 +287,18 @@ expression:
 	{
 		printf("expression -> IDENTIFIER INCREASE (low priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $1);
+                // l'id doit être déclaré et initialisé
+                if (!id->is_declared)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
+                        exit(1);
+                }
+                if (!id->is_set)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been initialized previously\n", id->identifier+8);
+                        exit(1);
+                }
+
 		struct symbol *incr = symbol_new_temp(&symbol_table);
 		incr->int_value = 1;
 		struct symbol *res = symbol_new_temp(&symbol_table);
@@ -290,6 +313,18 @@ expression:
 	{
 		printf("expression -> IDENTIFIER DECREASE (low priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $1);
+                // l'id doit être déclaré et initialisé
+                if (!id->is_declared)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
+                        exit(1);
+                }
+                if (!id->is_set)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been initialized previously\n", id->identifier+8);
+                        exit(1);
+                }
+
 		struct symbol *incr = symbol_new_temp(&symbol_table);
 		incr->int_value = 1;
 		struct symbol *res = symbol_new_temp(&symbol_table);
@@ -353,13 +388,26 @@ expression:
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
         }
+        | TYPE_INT IDENTIFIER
+        {
+                printf("expression -> TYPE_INT IDENTIFIER\n");
+		struct symbol *id = symbol_lookup(symbol_table, $2);
+                // maintenant l'id est déclaré mais non initialisé
+                id->is_declared = true;
+		$$.result = id;
+		$$.code = NULL;
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.nextlist = NULL;
+        }
         | TYPE_INT IDENTIFIER ASSIGNMENT expression
         {
                 printf("expression -> TYPE_INT IDENTIFIER ASSIGNMENT expression\n");
 		struct symbol *id = symbol_lookup(symbol_table, $2);
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $4.result, NULL, false, NULL);
-                // maintenant l'id est déclaré
+                // maintenant l'id est déclaré et initialisé
                 id->is_declared = true;
+                id->is_set = true;
 		$$.result = id;
 		$$.code = list_concat($4.code, list_new(new_quad));
                 $$.truelist = NULL;
@@ -373,9 +421,11 @@ expression:
                 // l'id doit avoir été déclaré précédemment
                 if (!id->is_declared)
                 {
-                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier);
+                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
                         exit(1);
                 }
+                // l'id est désormais initialisé
+                id->is_set = true;
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $3.result, NULL, false, NULL);
 		$$.result = id;
 		$$.code = list_concat($3.code, list_new(new_quad));
@@ -387,6 +437,18 @@ expression:
 	{
 		printf("expression -> INCREASE IDENTIFIER (high priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $2);
+                // l'id doit être déclaré et initialisé
+                if (!id->is_declared)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
+                        exit(1);
+                }
+                if (!id->is_set)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been initialized previously\n", id->identifier+8);
+                        exit(1);
+                }
+
 		struct symbol *incr = symbol_new_temp(&symbol_table);
 		incr->int_value = 1;
 		struct symbol *res = symbol_new_temp(&symbol_table);
@@ -401,6 +463,18 @@ expression:
 	{
 		printf("expression -> DECREASE IDENTIFIER (high priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $2);
+                // l'id doit être déclaré et initialisé
+                if (!id->is_declared)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
+                        exit(1);
+                }
+                if (!id->is_set)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been initialized previously\n", id->identifier+8);
+                        exit(1);
+                }
+
 		struct symbol *decr = symbol_new_temp(&symbol_table);
 		decr->int_value = 1;
 		struct symbol *res = symbol_new_temp(&symbol_table);
@@ -510,6 +584,30 @@ condition:
                 // recherche des deux symboles dans la table
                 struct symbol *id1 = symbol_lookup(symbol_table, $1);
                 struct symbol *id2 = symbol_lookup(symbol_table, $3);
+
+                // les id doivent être déclarés et initialisés
+                if (!id1->is_declared)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id1->identifier+8);
+                        exit(1);
+                }
+                if (!id1->is_set)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been initialized previously\n", id1->identifier+8);
+                        exit(1);
+                }
+
+                if (!id2->is_declared)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id2->identifier+8);
+                        exit(1);
+                }
+                if (!id2->is_set)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been initialized previously\n", id2->identifier+8);
+                        exit(1);
+                }
+
                 // génération du goto conditionnel : if ID1 == ID2 goto ?
                 struct quad *new_quad_true;
                 switch ($2)

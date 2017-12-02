@@ -60,7 +60,7 @@ type_stencil        "stencil"
 {for}                   { return FOR; }
 {while}                 { return WHILE; }
 
-{type_int}              { return TYPE_INT; }
+{type_int}                                      { return TYPE_INT; }
 {type_int}("["{integer}"]")*                    { return TYPE_INT_ARRAY; }
 {type_stencil}"{"{integer}{comma}{integer}"}"   { return TYPE_STENCIL; }
 
