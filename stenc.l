@@ -108,7 +108,7 @@ type_stencil        "stencil"
 {left_round_bracket}    { return LEFT_ROUND_BRACKET; }
 {right_round_bracket}   { return RIGHT_ROUND_BRACKET; }
 
-\t|\n|\r                { return yytext[0]; }
+\t|\n|\r                {  }
 [ ]                     {  }
 .                       { printf("lexical error : char %s not recognized\n", yytext); exit(1); }
 

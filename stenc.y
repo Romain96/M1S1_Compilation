@@ -8,6 +8,7 @@
         #include "mips_generator.h"
         void yyerror(char*);
         int yylex();
+        FILE *yyin;
 
         // la table des symboles
         struct symbol *symbol_table = NULL;
@@ -65,7 +66,7 @@
 %%
 
 program:
-        statement_list '\n'
+        statement_list
         {
                 printf("program -> statement_list\n");
                 $$.result = $1.result;
@@ -721,12 +722,23 @@ print_function_call:
 
 %%
 
-int main()
+int main(int argc, char *argv[])
 {
-        printf("Enter an arithmetic expression\n");
+        if (argc != 2)
+        {
+                fprintf(stderr, "usage : %s filename.c\n", argv[0]);
+                exit(1);
+        }
+
+        // ouverture du fichier
+        FILE *input = fopen(argv[1], "r");
+        yyin = input;
+
         yyparse();
         symbol_print(symbol_table);
         quad_print(quad_list);
+
+        fclose(input);
 
         // !! experimental !!
         struct mips_generator *mips = mips_setup("output.s", symbol_table, quad_list);
