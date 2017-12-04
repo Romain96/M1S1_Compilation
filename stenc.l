@@ -3,6 +3,7 @@
     #include <string.h>
     #include <stdlib.h>
     #include <string.h>
+    #include <stdbool.h>
     #include "symbol_table.h"
     #include "y.tab.h"
     extern struct symbol *symbol_table;
@@ -11,6 +12,7 @@
 %option nounput
 %option noyywrap
 
+array               "{"[0-9{} ]*"}"
 integer             [0-9]|([1-9][0-9]*)
 identifier          [a-z_][a-zA-Z_]*
 string              ["][^\"]*["]
@@ -38,6 +40,8 @@ left_round_bracket  "("
 right_round_bracket ")"
 left_brace          "{"
 right_brace         "}"
+left_bracket        "["
+right_bracket       "]"
 semicolon 	        ";"
 comma               ","
 
@@ -61,8 +65,7 @@ type_stencil        "stencil"
 {while}                 { return WHILE; }
 
 {type_int}                                      { return TYPE_INT; }
-{type_int}("["{integer}"]")*                    { return TYPE_INT_ARRAY; }
-{type_stencil}"{"{integer}{comma}{integer}"}"   { return TYPE_STENCIL; }
+{type_stencil}{left_bracket}{integer}{comma}{integer}{right_bracket}   { return TYPE_STENCIL; }
 
 {integer}               { 
                             yylval.integer_value = atoi(yytext); 

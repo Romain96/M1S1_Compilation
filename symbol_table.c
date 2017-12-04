@@ -14,6 +14,7 @@ struct symbol *symbol_alloc()
 	new->is_declared = false;
 	new->is_set = false;
 	new->is_string_litteral = false;
+	new->is_int_array = false;
 	new->next = NULL;
 	return new;
 }
@@ -75,6 +76,10 @@ void symbol_free(struct symbol **symbol)
 	{
 		iterator = iterator->next;
 		free(symbol_to_free->identifier);
+		if (symbol_to_free->is_string_litteral)
+			free(symbol_to_free->string_value);
+		if (symbol_to_free->is_int_array)
+			free(symbol_to_free->int_array_value);
 		free(symbol_to_free);
 		symbol_to_free = iterator;
 	}
@@ -97,14 +102,16 @@ void symbol_print(struct symbol *symbol)
 			printf("is_declared : true, ");
 		else
 			printf("is_declared : false :");
-		if (symbol->is_declared)
+		if (symbol->is_set)
 			printf("is_set : true, ");
 		else
-			printf("is_set : false :");
+			printf("is_set : false, ");
 		if (symbol->is_string_litteral)
 			printf("string value : %s\n", symbol->string_value);
+		else if (symbol->is_int_array)
+			printf("int_array_value : won't display that\n");
 		else
-			printf("int value : %d\n", symbol->int_value);
+			printf("int value : %d", symbol->int_value);
 		symbol = symbol->next;
 	}
 }

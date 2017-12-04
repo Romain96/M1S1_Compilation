@@ -77,8 +77,6 @@ void quad_free(struct quad **ql)
 		iterator = iterator->next;
 		if (quad_to_free->contain_goto)
 			free(quad_to_free->goto_quad);
-		if (quad_to_free->is_labelled)
-			free(quad_to_free->label_name);
 		free(quad_to_free);
 		quad_to_free = iterator;
 	}

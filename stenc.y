@@ -19,6 +19,7 @@
 {
         int integer_value;
         char *string;
+        int *array;
         enum relop_enum {EQ, NE, GT, LT, GE, LE} relop_code;
         enum for_iterator_enum {INCR, DECR} for_iterator_code;
         struct codegen {
@@ -32,6 +33,7 @@
 
 %token <integer_value> INTEGER
 %token <string> IDENTIFIER STRING
+%token <array> INT_ARRAY
 %token PLUS MINUS MULTIPLY DIVIDE
 %token ASSIGNMENT
 %token COMMA SEMICOLON
