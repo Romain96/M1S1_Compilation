@@ -44,8 +44,10 @@
 %token BOOL_AND BOOL_OR BOOL_NOT
 %token IF ELSE FOR WHILE
 %token TYPE_INT TYPE_INT_ARRAY TYPE_STENCIL
+%token RETURN MAIN
 
 %type <gencode> program
+%type <gencode> main_func
 %type <gencode> statement_list
 %type <gencode> statement
 %type <gencode> control_struct
@@ -68,18 +70,40 @@
 %%
 
 program:
-        statement_list
+        main_func
         {
-                printf("program -> statement_list\n");
+                printf("program -> main_func\n");
                 $$.result = $1.result;
                 $$.code = $1.code;
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
                 printf("Match !!!\n");
+		printf("Main returns with value %d\n", $1.result->int_value);
                 return 0;
         }
         ;
+
+main_func:
+	TYPE_INT MAIN LEFT_BRACE statement_list RETURN statement RIGHT_BRACE
+	{
+		printf("main_func -> TYPE_INT { statement_list RETURN INTEGER ; }\n");
+		$$.result = $6.result;
+		$$.code = list_concat($4.code, $6.code);
+		$$.truelist = NULL;
+		$$.falselist = NULL;
+		$$.nextlist = NULL;
+	}
+	| TYPE_INT MAIN LEFT_BRACE RETURN statement RIGHT_BRACE
+	{
+		printf("main_func -> TYPE_INT { RETURN INTEGER ; }\n");
+		$$.result = $5.result;
+		$$.code = $5.code;
+		$$.truelist = NULL;
+		$$.falselist = NULL;
+		$$.nextlist = NULL;
+	}
+	;	
 
 statement_list:
         statement_list statement
