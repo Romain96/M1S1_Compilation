@@ -59,27 +59,26 @@ return 		"return"
 
 %%
 
-{return} 		{ printf("return dit : %s\n", yytext); return RETURN; }
+{return}[ ]* 		{ return RETURN; }
 
 {print}f                { return PRINT_STRING; }
 {print}i                { return PRINT_INTEGER; }
 
-{main}			{ printf("main dit : %s\n", yytext); return MAIN; }
+{main}			{ return MAIN; }
 
 {if}                    { return IF; }
 {else}                  { return ELSE; }
 {for}                   { return FOR; }
 {while}                 { return WHILE; }
 
-{type_int}                                      { return TYPE_INT; }
+{type_int}           	{ return TYPE_INT; }
 {type_stencil}{left_bracket}{integer}{comma}{integer}{right_bracket}   { return TYPE_STENCIL; }
 
 {integer}               { 
-				printf("entier dit : %s\n", yytext);
                             yylval.integer_value = atoi(yytext); 
                             return INTEGER; 
                         }
-{identifier}            { printf("identifier casse le couilles avec : %s\n", yytext);
+{identifier}          	{
                             char user_identifier_prefix[] = "__mips__";
                             yylval.string = malloc((strlen(yytext) + strlen(user_identifier_prefix) + 1) * sizeof(char));
                             strcat(yylval.string, user_identifier_prefix);
@@ -99,8 +98,8 @@ return 		"return"
 {minus}                 { return MINUS; }
 {multiply}              { return MULTIPLY; }
 {divide}                { return DIVIDE; }
-{increase}	            { return INCREASE; }
-{decrease}	            { return DECREASE; }
+{increase}	       	{ return INCREASE; }
+{decrease}	     	{ return DECREASE; }
 
 {bool_eq}               { return BOOL_EQ; }
 {bool_ne}               { return BOOL_NE; }
