@@ -8,4 +8,6 @@ for (a = 0; a < b; a++)
 	printi(a);
 	printf("\n");
 }
+int c = 42;
+if (a < c) { printf("oui\n"); } else { printf("non\n"); }
 printf("end");
