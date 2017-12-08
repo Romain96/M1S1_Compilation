@@ -5,6 +5,7 @@
     #include <string.h>
     #include <stdbool.h>
     #include "symbol_table.h"
+    #include "array_parser.h"
     #include "y.tab.h"
     extern struct symbol *symbol_table;
 %}
@@ -12,8 +13,8 @@
 %option nounput
 %option noyywrap
 
-array               "{"[0-9{} ]*"}"
-integer             [0-9]|([1-9][0-9]*)
+int_array           "{"[0-9{}\- ]*"}"
+integer             [-]?([0-9]|([1-9][0-9]*))
 identifier          [a-z_][a-zA-Z_]*
 string              ["][^\"]*["]
 
@@ -59,12 +60,12 @@ return 		"return"
 
 %%
 
-{return}[ ]* 		{ return RETURN; }
+{return}[ ]*            { return RETURN; }
 
 {print}f                { return PRINT_STRING; }
 {print}i                { return PRINT_INTEGER; }
 
-{main}			{ return MAIN; }
+{main}			        { return MAIN; }
 
 {if}                    { return IF; }
 {else}                  { return ELSE; }
@@ -77,6 +78,11 @@ return 		"return"
 {integer}               { 
                             yylval.integer_value = atoi(yytext); 
                             return INTEGER; 
+                        }
+{int_array}             {
+                            yylval.array = array_parser_parse_text(yytext);
+                            array_parser_print_struct(yylval.array);
+                            return INT_ARRAY;
                         }
 {identifier}          	{
                             char user_identifier_prefix[] = "__mips__";
@@ -98,8 +104,8 @@ return 		"return"
 {minus}                 { return MINUS; }
 {multiply}              { return MULTIPLY; }
 {divide}                { return DIVIDE; }
-{increase}	       	{ return INCREASE; }
-{decrease}	     	{ return DECREASE; }
+{increase}	       	    { return INCREASE; }
+{decrease}	     	    { return DECREASE; }
 
 {bool_eq}               { return BOOL_EQ; }
 {bool_ne}               { return BOOL_NE; }
@@ -115,6 +121,8 @@ return 		"return"
 {semicolon}	            { return SEMICOLON; }
 {left_brace}            { return LEFT_BRACE; }
 {right_brace}           { return RIGHT_BRACE; }
+{left_bracket}          { return LEFT_BRACKET; }
+{right_bracket}         { return RIGHT_BRACKET; }
 {left_round_bracket}    { return LEFT_ROUND_BRACKET; }
 {right_round_bracket}   { return RIGHT_ROUND_BRACKET; }
 

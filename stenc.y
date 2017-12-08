@@ -6,6 +6,7 @@
         #include "quad.h"
         #include "list.h"
         #include "mips_generator.h"
+        #include "array_parser.h"
         void yyerror(char*);
         int yylex();
         FILE *yyin;
@@ -19,7 +20,7 @@
 {
         int integer_value;
         char *string;
-        int *array;
+        struct int_array *array;
         enum relop_enum {EQ, NE, GT, LT, GE, LE} relop_code;
         enum for_iterator_enum {INCR, DECR} for_iterator_code;
         struct codegen {
@@ -39,7 +40,7 @@
 %token COMMA SEMICOLON
 %token INCREASE DECREASE
 %token PRINT_STRING PRINT_INTEGER
-%token LEFT_ROUND_BRACKET RIGHT_ROUND_BRACKET LEFT_BRACE RIGHT_BRACE
+%token LEFT_ROUND_BRACKET RIGHT_ROUND_BRACKET LEFT_BRACE RIGHT_BRACE LEFT_BRACKET RIGHT_BRACKET
 %token BOOL_EQ BOOL_NE BOOL_GT BOOL_LT BOOL_GE BOOL_LE
 %token BOOL_AND BOOL_OR BOOL_NOT
 %token IF ELSE FOR WHILE
@@ -518,6 +519,18 @@ expression:
                 struct symbol *new = symbol_new_temp(&symbol_table);
                 new->is_constant = true;
                 new->int_value = $1;
+                $$.result = new;
+                $$.code = NULL;
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.nextlist = NULL;
+        }
+        | INT_ARRAY
+        {
+                printf("expression -> INT_ARRAY\n");
+                struct symbol *new = symbol_new_temp(&symbol_table);
+                new->is_int_array = true;
+                new->int_array_value = $1;
                 $$.result = new;
                 $$.code = NULL;
                 $$.truelist = NULL;
