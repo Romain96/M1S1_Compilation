@@ -13,7 +13,7 @@
 %option nounput
 %option noyywrap
 
-int_array           "{"[0-9{}\- ]*"}"
+int_array           "{"[{},0-9\- ]*"}"
 integer             [-]?([0-9]|([1-9][0-9]*))
 identifier          [a-z_][a-zA-Z_]*
 string              ["][^\"]*["]
@@ -82,6 +82,7 @@ return 		"return"
 {int_array}             {
                             yylval.array = array_parser_parse_text(yytext);
                             array_parser_print_struct(yylval.array);
+                            printf("int_array is here %s\n", yytext);
                             return INT_ARRAY;
                         }
 {identifier}          	{
@@ -91,6 +92,7 @@ return 		"return"
                             strcat(yylval.string, yytext);
                             if (symbol_lookup(symbol_table, yylval.string) == NULL)
                                 symbol_add(&symbol_table, yylval.string); 
+                            printf("identifier is fucking here %s (%s)\n", yylval.string, yytext);
                             return IDENTIFIER; 
                         }
 {string}                { 
@@ -98,7 +100,7 @@ return 		"return"
                             return STRING; 
                         }
 
-{assignment}	        { return ASSIGNMENT; }
+{assignment}	        { printf("assignment is here\n"); return ASSIGNMENT; }
 
 {plus}                  { return PLUS; }
 {minus}                 { return MINUS; }
@@ -119,10 +121,10 @@ return 		"return"
 
 {comma}                 { return COMMA; }
 {semicolon}	            { return SEMICOLON; }
-{left_brace}            { return LEFT_BRACE; }
-{right_brace}           { return RIGHT_BRACE; }
-{left_bracket}          { return LEFT_BRACKET; }
-{right_bracket}         { return RIGHT_BRACKET; }
+{left_brace}            { printf("l_br\n"); return LEFT_BRACE; }
+{right_brace}           { printf("r_br\n"); return RIGHT_BRACE; }
+{left_bracket}          { printf("l_brk\n"); return LEFT_BRACKET; }
+{right_bracket}         { printf("r_brk\n"); return RIGHT_BRACKET; }
 {left_round_bracket}    { return LEFT_ROUND_BRACKET; }
 {right_round_bracket}   { return RIGHT_ROUND_BRACKET; }
 

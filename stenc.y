@@ -16,6 +16,8 @@
         struct quad *quad_list = NULL;
 %}
 
+%error-verbose
+
 %union
 {
         int integer_value;
@@ -56,6 +58,7 @@
 %type <for_iterator_code> for_iterator
 %type <gencode> instruction_block
 %type <gencode> expression
+%type <gencode> declaration_or_assignment
 %type <gencode> condition
 %type <relop_code> relop
 %type <gencode> print_function_call
@@ -65,6 +68,7 @@
 %right ASSIGNMENT
 %left BOOL_AND BOOL_OR
 %nonassoc BOOL_NOT
+%nonassoc IF ELSE
 
 %start program
 
@@ -416,51 +420,15 @@ expression:
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
         }
-        | TYPE_INT IDENTIFIER
+        | declaration_or_assignment
         {
-                printf("expression -> TYPE_INT IDENTIFIER\n");
-		struct symbol *id = symbol_lookup(symbol_table, $2);
-                // maintenant l'id est déclaré mais non initialisé
-                id->is_declared = true;
-		$$.result = id;
-		$$.code = NULL;
+                printf("expression -> declaration_or_assignment\n");
+                $$.result = $1.result;
+                $$.code = $1.code;
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
         }
-        | TYPE_INT IDENTIFIER ASSIGNMENT expression
-        {
-                printf("expression -> TYPE_INT IDENTIFIER ASSIGNMENT expression\n");
-		struct symbol *id = symbol_lookup(symbol_table, $2);
-		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $4.result, NULL, false, NULL);
-                // maintenant l'id est déclaré et initialisé
-                id->is_declared = true;
-                id->is_set = true;
-		$$.result = id;
-		$$.code = list_concat($4.code, list_new(new_quad));
-                $$.truelist = NULL;
-                $$.falselist = NULL;
-                $$.nextlist = NULL;
-        }
-	| IDENTIFIER ASSIGNMENT expression
-	{
-		printf("expression -> IDENTIFIER ASSIGNMENT expression\n");
-		struct symbol *id = symbol_lookup(symbol_table, $1);
-                // l'id doit avoir été déclaré précédemment
-                if (!id->is_declared)
-                {
-                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
-                        exit(1);
-                }
-                // l'id est désormais initialisé
-                id->is_set = true;
-		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $3.result, NULL, false, NULL);
-		$$.result = id;
-		$$.code = list_concat($3.code, list_new(new_quad));
-                $$.truelist = NULL;
-                $$.falselist = NULL;
-                $$.nextlist = NULL;
-	}
 	| INCREASE IDENTIFIER
 	{
 		printf("expression -> INCREASE IDENTIFIER (high priority)\n");
@@ -548,6 +516,63 @@ expression:
                 $$.nextlist = NULL;
         }
         | print_function_call
+        ;
+
+declaration_or_assignment: 
+        TYPE_INT IDENTIFIER
+        {
+                printf("expression -> TYPE_INT IDENTIFIER\n");
+		struct symbol *id = symbol_lookup(symbol_table, $2);
+                // maintenant l'id est déclaré mais non initialisé
+                id->is_declared = true;
+		$$.result = id;
+		$$.code = NULL;
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.nextlist = NULL;
+        }
+	| IDENTIFIER ASSIGNMENT expression
+	{
+		printf("expression -> IDENTIFIER ASSIGNMENT expression\n");
+		struct symbol *id = symbol_lookup(symbol_table, $1);
+                // l'id doit avoir été déclaré précédemment
+                if (!id->is_declared)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
+                        exit(1);
+                }
+                // l'id est désormais initialisé
+                id->is_set = true;
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $3.result, NULL, false, NULL);
+		$$.result = id;
+		$$.code = list_concat($3.code, list_new(new_quad));
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.nextlist = NULL;
+	}
+        | TYPE_INT IDENTIFIER ASSIGNMENT expression
+        {
+                printf("expression -> TYPE_INT IDENTIFIER ASSIGNMENT expression\n");
+		struct symbol *id = symbol_lookup(symbol_table, $2);
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $4.result, NULL, false, NULL);
+                // maintenant l'id est déclaré et initialisé
+                id->is_declared = true;
+                id->is_set = true;
+		$$.result = id;
+		$$.code = list_concat($4.code, list_new(new_quad));
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.nextlist = NULL;
+        }
+        | TYPE_INT IDENTIFIER LEFT_BRACKET RIGHT_BRACKET ASSIGNMENT INT_ARRAY
+        {
+                printf("expression -> TYPE_INT IDENTIFIER LEFT_BRACKET RIGHT_BRACKET ASSIGNMENT INT_ARRAY\n");
+		struct symbol *id = symbol_lookup(symbol_table, $2);
+                // maintenant l'id est déclaré et initialisé
+                id->is_declared = true;
+                id->is_set = true;
+                id->is_int_array = true;
+        }
         ;
 
 condition:

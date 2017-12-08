@@ -251,3 +251,37 @@ void array_parser_print_struct(struct int_array *arr)
 	for (int i = 0; i < arr->size_of_data; i++)
 		printf("Integer %d : %d\n", i, arr->data[i]);
 }
+
+// extrait le nom du tableau
+char *array_parser_extract_identifier(char *text)
+{
+	int i = 0;
+	int id_begin = 0;
+	int id_end = 0;
+
+	while(i < strlen(text) + 1)
+	{
+		// première lettre (a-zA-Z_)
+		if ((text[i] >= 65 && text[i] <= 90) || (text[i] >= 97 && text[i] <= 122) || text[i] == '_')
+		{
+			// chercher la fin
+			id_begin = i;
+			while (i < strlen(text) + 1 && (text[i] >= 65 && text[i] <= 90) || (text[i] >= 97 && text[i] <= 122) || text[i] == '_')
+				i++;
+			id_end = i;
+			
+			// extraction
+			char *id = malloc((id_end - id_begin + 1) * sizeof(char));
+			if (id == NULL)
+			{
+				fprintf(stderr, "[ARRAY_PARSER::array_parser_extract_identifier] ERROR while allocating id\n");
+				exit(EXIT_FAILURE);
+			}
+			strncpy(id, text + id_begin, (id_end - id_begin));
+			id[id_end - id_begin] = '\0';	// strncpy n'écrit pas '\0' si la chaine est plus longue
+			printf("array id is %s\n", id);
+			return id;
+		}
+	}
+	return NULL;
+}
