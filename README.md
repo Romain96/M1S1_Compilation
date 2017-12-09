@@ -36,7 +36,7 @@ le StenC [Sten-Ci] est un sous ensemble du C auquel on a ajouté un type stencil
 | 2017-11-29 | Génération du code MIPS des fonctions printf et printi |
 | 2017-11-30 | Génération de code MIPS pour les conditions booléennes |
 | 2017-12-02 | Génération de code MIPS pour les structures de contrôle (if, else, for, while) |
-| 2017-12-09|| Génération de code MIPS pour les tableaux et références de tableaux |
+| 2017-12-09 | Génération de code MIPS pour les tableaux et références de tableaux |
 |     ?      |        ?          |
 
 ## Spécification complète du compilateur [à venir]
