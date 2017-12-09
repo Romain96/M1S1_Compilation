@@ -2,7 +2,12 @@
 #include <stdlib.h>
 #include "stack.h"
 
-// alloue la mémoire pour une nouvelle pile
+// Fonction             : stack_new
+// Argument(s)          : /
+// Valeur de retour     : un pointeur sur une nouvelle structure stack allouÃ©e par la fonction
+// PrÃ©-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : alloue la mÃ©moire pour une nouvelle pile
 struct stack *stack_new()
 {
 	struct stack *s = (struct stack *)malloc(sizeof(struct stack));
@@ -12,15 +17,21 @@ struct stack *stack_new()
 		exit(EXIT_FAILURE);
 	}
 
-	// la tête est vide
+	// la tÃªte est vide
 	s->head = NULL;
 	return s;
 }
 
-// ajoute la valeur dans la pile (ajout en tête)
+// Fonction             : stack_push
+// Argument(s)          : - s : un pointeur sur une structure stack
+//			  - value : l'entier Ã  ajouter
+// Valeur de retour     : /
+// PrÃ©-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : ajoute la valeur dans la pile (ajout en tÃªte)
 void stack_push(struct stack *s, int value)
 {
-	// allocation d'un nouveau stack_element qui devient la nouvelle tête de pile
+	// allocation d'un nouveau stack_element qui devient la nouvelle tÃªte de pile
 	struct stack_element *elt = (struct stack_element *)malloc(sizeof(struct stack_element));
 	if (elt == NULL)
 	{
@@ -29,13 +40,18 @@ void stack_push(struct stack *s, int value)
 	}
 
 	elt->value = value;
-	// la tête courante est elt->next
+	// la tÃªte courante est elt->next
 	elt->next = s->head;
-	// et elt est la nouvelle tête
+	// et elt est la nouvelle tÃªte
 	s->head = elt;
 }
 
-// retire l'élement en tête (retourne sa valeur et libère la mémoire allouée pour lui)
+// Fonction             : stack_pop
+// Argument(s)          : - s : un pointeur sur une structure stack
+// Valeur de retour     : un entier contenant la valeur de la tÃªte de la pile
+// PrÃ©-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : retire l'Ã©lement en tÃªte (retourne sa valeur et libÃ¨re la mÃ©moire allouÃ©e pour lui)
 int stack_pop(struct stack *s)
 {
 	if (s->head == NULL)
@@ -46,23 +62,33 @@ int stack_pop(struct stack *s)
 
 	// conservation du pointeur next
 	struct stack_element *temp = s->head->next;
-	// et de la valeur de la tête
+	// et de la valeur de la tÃªte
 	int return_value = s->head->value;
-	// libération de la mémoire
+	// libÃ©ration de la mÃ©moire
 	free(s->head);
-	// temp est la nouvelle tête désormais
+	// temp est la nouvelle tÃªte dÃ©sormais
 	s->head = temp;
 		
 	return return_value;
 }
 
-// comportement similaire à stack_pop sauf que l'élement n'est pas supprimé de la pile
+// Fonction             : stack_head
+// Argument(s)          : - s : un pointeur sur une structure stack
+// Valeur de retour     : la valeur de la tÃªte de pile
+// PrÃ©-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : comportement similaire Ã  stack_pop sauf que l'Ã©lement n'est pas supprimÃ© de la pile
 int stack_head(struct stack *s)
 {
 	return s->head->value;
 }
 
-// vérifie que la pile est vide
+// Fonction             : stack_is_empty
+// Argument(s)          : - s : un pointeur sur une structure stack
+// Valeur de retour     : vrai si la pile est vide, faux sinon
+// PrÃ©-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)      	: vÃ©rifie que la pile est vide
 bool stack_is_empty(struct stack *s)
 {
 	if (s->head == NULL)
@@ -71,10 +97,15 @@ bool stack_is_empty(struct stack *s)
 		return false;
 }
 
-// libère la mémoire allouée pour la pile
+// Fonction             : stack_free
+// Argument(s)          : - s : un pointeur sur une structure stack
+// Valeur de retour     : /
+// PrÃ©-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : libÃ¨re la mÃ©moire allouÃ©e pour la pile
 void stack_free(struct stack *s)
 {
-	// libération des données de type stack_element
+	// libÃ©ration des donnÃ©es de type stack_element
 	if (s->head != NULL)
 	{
 		struct stack_element *iterator = s->head;
@@ -89,7 +120,12 @@ void stack_free(struct stack *s)
 	}
 }
 
-// DEBUG : affiche le contenu de la pile
+// Fonction             : stack_print
+// Argument(s)          : - s : un pointeur sur une structure stack
+// Valeur de retour     : /
+// PrÃ©-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : affiche le contenu de la pile
 void stack_print(struct stack *s)
 {
 	struct stack_element *iterator = s->head;
