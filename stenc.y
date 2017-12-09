@@ -7,6 +7,7 @@
         #include "list.h"
         #include "mips_generator.h"
         #include "array_parser.h"
+        #define MIPS_REGISTER_SIZE_IN_BYTES 4
         void yyerror(char*);
         int yylex();
         FILE *yyin;
@@ -22,7 +23,8 @@
 {
         int integer_value;
         char *string;
-        struct int_array *array;
+        struct stenc_array *array;
+        struct stenc_array *array_reference;
         enum relop_enum {EQ, NE, GT, LT, GE, LE} relop_code;
         enum for_iterator_enum {INCR, DECR} for_iterator_code;
         struct codegen {
@@ -31,12 +33,14 @@
                 struct list *truelist;
                 struct list *falselist;
                 struct list *nextlist;
+                struct stenc_array *array_value;
         }gencode;
 }
 
 %token <integer_value> INTEGER
 %token <string> IDENTIFIER STRING
 %token <array> INT_ARRAY
+%token <array_reference> INT_ARRAY_REFERENCE
 %token PLUS MINUS MULTIPLY DIVIDE
 %token ASSIGNMENT
 %token COMMA SEMICOLON
@@ -496,14 +500,12 @@ expression:
         | INT_ARRAY
         {
                 printf("expression -> INT_ARRAY\n");
-                struct symbol *new = symbol_new_temp(&symbol_table);
-                new->is_int_array = true;
-                new->int_array_value = $1;
-                $$.result = new;
+                $$.result = NULL;
                 $$.code = NULL;
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = $1;
         }
         | IDENTIFIER
         {
@@ -572,6 +574,34 @@ declaration_or_assignment:
                 id->is_declared = true;
                 id->is_set = true;
                 id->is_int_array = true;
+                id->int_array_value = $6;
+                // pour chaque case du tableau il faut générer un quad d'affectation (QUAD_ARRAY_WRITE)
+                // et concaténer le quad dans la liste contenant le quad (les valeurs sont dans l'ordre)
+                struct symbol *address = NULL;
+                struct symbol *value = NULL;
+                struct quad *new_quad = NULL;
+                int index = 0;
+                $$.code = NULL;
+                printf("size_of_data %d\n", $6->size_of_data);
+                for (int i = 0; i < $6->size_of_data; i++)
+                {
+                        // génération d'un nouveau temporaire contenant l'adresse
+                        address = symbol_new_temp(&symbol_table);
+                        address->int_value = index;
+                        // génération d'un nouveau temporaire contenant la valeur
+                        value = symbol_new_temp(&symbol_table);
+                        value->int_value = $6->data[i]; 
+                        // génération du quad
+                        new_quad = quad_gen(&quad_list, QUAD_ARRAY_WRITE, id, value, address, false, NULL);
+                        // l'adresse de l'élément suivant est 4 octets après (registres de 32 bits)
+                        index += MIPS_REGISTER_SIZE_IN_BYTES;
+                        $$.code = list_concat($$.code, list_new(new_quad));
+                }
+                $$.result = NULL;
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.nextlist = NULL;
+                $$.array_value = $6;
         }
         ;
 

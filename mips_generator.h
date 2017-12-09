@@ -49,4 +49,8 @@ void __mips_generate_boolean_lt(struct mips_generator *, struct quad *);
 void __mips_generate_boolean_ge(struct mips_generator *, struct quad *);
 void __mips_generate_boolean_le(struct mips_generator *, struct quad *);
 
+// fonctions de génératoin des tableaux multidimensionnels
+void __mips_generate_array_read(struct mips_generator *, struct quad *);
+void __mips_generate_array_write(struct mips_generator *, struct quad *);
+
 #endif

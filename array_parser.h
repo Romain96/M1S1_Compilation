@@ -3,24 +3,32 @@
 
 #include <stdbool.h>
 
-// structure
-struct int_array
+// structure représentant les tableaux ou les références de tableaux
+struct stenc_array
 {
-	int number_of_dimensions;
-	int *size_of_dimensions;
-	int size_of_data;
-	int *data;
+	int number_of_dimensions;	// nombre de dimensions (tableau et références)
+	int *size_of_dimensions;	// taille de chaque dimension (tableau uniquement)
+	int *index_of_dimensions;	// indice dans chaque dimension (référence uniquement)
+	int size_of_data;		// nombre de valeurs (tableau et références quand affectation de tableau)
+	int *data;			// valeurs (tableau uniquement)
 };
 
-// fonctions
+// fonctions de manipulation des valeurs de tableau
 bool __array_parser_check_braces(char *);
 bool __array_parser_check_commas(char *);
 int __array_parser_count_values(char *);
 int __array_parser_count_number_of_dimensions(char *);
 void __array_parser_depth_block_count(char *, int, int *);
 int *__array_parser_count_size_of_dimensions(char *, int);
-struct int_array *array_parser_parse_text(char *);
-void array_parser_free(struct int_array *);
-void array_parser_print_struct(struct int_array *);
+struct stenc_array *array_parser_parse_text(char *);
+
+// fonctions de manipulation des références de tableau
+char *__array_parser_extract_reference_identifier(char *);
+int __array_parser_count_reference_dimensions(char *);
+int *__array_parser_count_index_of_dimensions(char *, int);
+struct stenc_array *array_parser_parse_reference(char *);
+
+void array_parser_free(struct stenc_array *);
+void array_parser_print(struct stenc_array *);
 
 #endif

@@ -15,6 +15,7 @@
 
 int_array           "{"[{},0-9\- ]*"}"
 integer             [-]?([0-9]|([1-9][0-9]*))
+array_reference     [a-z_][a-zA-Z_]*("["[-]?([0-9]|([1-9][0-9]*))"]")+
 identifier          [a-z_][a-zA-Z_]*
 string              ["][^\"]*["]
 
@@ -81,8 +82,16 @@ return 		"return"
                         }
 {int_array}             {
                             yylval.array = array_parser_parse_text(yytext);
-                            array_parser_print_struct(yylval.array);
+                            array_parser_print(yylval.array);
                             return INT_ARRAY;
+                        }
+{array_reference}       {
+                            yylval.array_reference = array_parser_parse_reference(yytext);
+                            char *id = __array_parser_extract_reference_identifier(yytext);
+                            printf("array_ref : id is %s\n", id);
+                            if (symbol_lookup(symbol_table, id) == NULL)
+                                symbol_add(&symbol_table, id);
+                            return INT_ARRAY_REFERENCE;
                         }
 {identifier}          	{
                             char user_identifier_prefix[] = "__mips__";
@@ -91,6 +100,7 @@ return 		"return"
                             strcat(yylval.string, yytext);
                             if (symbol_lookup(symbol_table, yylval.string) == NULL)
                                 symbol_add(&symbol_table, yylval.string); 
+                            printf("identifier name is %s\n", yylval.string);
                             return IDENTIFIER; 
                         }
 {string}                { 

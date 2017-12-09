@@ -123,6 +123,10 @@ void quad_print(struct quad *quad_list)
 				printf("printf, "); break;
 			case QUAD_PRINTI:
 				printf("printi, "); break;
+			case QUAD_ARRAY_READ:
+				printf("array_read, "); break;
+			case QUAD_ARRAY_WRITE:
+				printf("array_write, "); break;
 			default:
 				printf("N/A, "); break;
 		}

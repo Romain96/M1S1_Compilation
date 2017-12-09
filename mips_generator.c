@@ -110,17 +110,31 @@ void __mips_write_symbol_table(struct mips_generator *mips)
         while(iterator != NULL)
         {                   
                 char line_to_write[MIPS_MAX_LINE_SIZE];
-		// variable entière
-		if (!iterator->is_string_litteral)
-		{
-                	snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "%s: .word %d\n", iterator->identifier, iterator->int_value);
-                	fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
-		}
-		else
+
+		if (iterator->is_string_litteral)
 		// variable chaine de caractères
 		{
 			snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "%s: .asciiz %s\n", iterator->identifier, iterator->string_value);
 			fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+		}
+                // variable tableau
+                else if (iterator->is_int_array)
+                {
+                        char value[] = "0, ";
+                        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "%s: .word ", iterator->identifier);
+                        for (int i = 0; i < iterator->int_array_value->size_of_data - 1; i++)
+                        {
+                                strncat(line_to_write, value, strlen(value));
+                        }
+                        strncat(line_to_write, "0\n", 2);
+                        printf("quad_init with value %s\n", line_to_write);
+                        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+                }
+                // variable entière
+                else
+		{
+                	snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "%s: .word %d\n", iterator->identifier, iterator->int_value);
+                	fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 		}
                 iterator = iterator->next;
         }
@@ -191,6 +205,12 @@ void __mips_write_quad_list(struct mips_generator *mips)
                                         break;
                                 case QUAD_PRINTF:
                                         __mips_generate_print_string(mips, iterator);
+                                        break;
+                                case QUAD_ARRAY_READ:
+                                        __mips_generate_array_read(mips, iterator);
+                                        break;
+                                case QUAD_ARRAY_WRITE:
+                                        __mips_generate_array_write(mips, iterator);
                                         break;
                                 default:
                                         printf("cas normalement impossible !\n");
@@ -599,5 +619,79 @@ void __mips_generate_boolean_le(struct mips_generator *mips, struct quad *q)
 
         // 3) génère un saut conditionnel (bgt $t1, $t2, label)   
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "ble $t1, $t2, %s\n", q->goto_quad);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+}
+
+//==================================================================================
+// FONCTIONS DE GENERATION DES ACCES AUX TABLEAUX
+//==================================================================================
+
+// Fonction             : __mips_generate_array_read
+// Argument(s)          : - mips : une structure mips_generator générée par mips_setup
+//                        - quad : le quad contenant la repésentation de l'instruction à générer
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : génère le code MIPS d'un accès à une référence de tableau
+void __mips_generate_array_read(struct mips_generator *mips, struct quad *q)
+{
+        char line_to_write[MIPS_MAX_LINE_SIZE];
+
+        // ici le quad code l'opération arg1 = arg2[res]
+        // avec arg1 la variable à affecter, res l'offset et arg2 le nom du tableau
+        
+        // 1) placer l'adresse de base du tableau dans le registre $t1 (la $t1, arg2)
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "la $t1, %s\n", q->arg2->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 2) placer l'offset (déjà multiplié par NBO = 4) de l'élément à lire dans le registre $t2 (lw $t2, res)
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "li $t2, %s\n", q->res->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 3) Additionner l'adresse de base avec l'offset et placer le résultat dans $t1 (add $t1, $t1, $t2)
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "add $t1, $t1, $t2\n");
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 4) charger la valeur lue à l'adresse $t1 dans $t0 (lw $t0, 0($t1))
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t0, 0($t1)\n");
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 5) placer la valeur de $t0 dans arg1
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw %s, $t0\n", q->arg1->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+}
+
+// Fonction             : __mips_generate_array_write
+// Argument(s)          : - mips : une structure mips_generator générée par mips_setup
+//                        - quad : le quad contenant la repésentation de l'instruction à générer
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : génère le code MIPS d'une affectation de référence de tableau
+void __mips_generate_array_write(struct mips_generator *mips, struct quad *q)
+{
+        char line_to_write[MIPS_MAX_LINE_SIZE];
+        
+        // ici le quad code l'opération arg1[res] = arg2
+        // avec arg1 le nom du tableau, res l'offset et arg2 la variable à affecter
+
+        // 1) placer l'adresse de base du tableau dans le registre $t1 (la $t1, arg1)
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "la $t1, %s\n", q->arg1->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 2) placer l'offset (déjà multiplié par NBO = 4) de l'élément à lire dans le registre $t2 (lw $t2, res)
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->res->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 3) Additionner l'adresse de base avec l'offset et placer le résultat dans $t1 (add $t1, $t1, $t2)
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "add $t1, $t1, $t2\n");
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 4) placer la valeur de arg2 dans $t0
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t0, %s\n", q->arg2->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+ 
+        // 5) placer la valeur de $t0 dans le tableau de arg1 à l'adresse contenue dans $t1 (sw $t0 0($t1))
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw $t0, 0($t1)\n");
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 }

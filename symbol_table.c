@@ -101,7 +101,7 @@ void symbol_print(struct symbol *symbol)
 		if (symbol->is_declared)
 			printf("is_declared : true, ");
 		else
-			printf("is_declared : false :");
+			printf("is_declared : false ");
 		if (symbol->is_set)
 			printf("is_set : true, ");
 		else
@@ -111,7 +111,7 @@ void symbol_print(struct symbol *symbol)
 		else if (symbol->is_int_array)
 			printf("int_array_value : won't display that\n");
 		else
-			printf("int value : %d", symbol->int_value);
+			printf("int value : %d\n", symbol->int_value);
 		symbol = symbol->next;
 	}
 }

@@ -16,7 +16,7 @@ struct symbol
 	union {
 		int int_value;		// prend en compte les variables entières
 		char *string_value;	// prend en compte les chaines de caractères
-		struct int_array *int_array_value;	// prend en compte les tableaux multidimensionnels et les stencils
+		struct stenc_array *int_array_value;	// prend en compte les tableaux multidimensionnels et les stencils
 	};
 	struct symbol *next;
 };
