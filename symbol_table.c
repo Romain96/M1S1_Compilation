@@ -79,7 +79,7 @@ void symbol_free(struct symbol **symbol)
 		if (symbol_to_free->is_string_litteral)
 			free(symbol_to_free->string_value);
 		if (symbol_to_free->is_int_array)
-			free(symbol_to_free->int_array_value);
+			array_parser_free(symbol_to_free->int_array_value);
 		free(symbol_to_free);
 		symbol_to_free = iterator;
 	}

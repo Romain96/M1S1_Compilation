@@ -1112,10 +1112,11 @@ int main(int argc, char *argv[])
                                         fprintf (stderr, "Unknown option `-%c'.\n", optopt);
                                 else
                                         fprintf (stderr,"Unknown option character `\\x%x'.\n",optopt);
-                                fprintf(stderr, "usage : %s [-v][-s][-q] -i input_c_file -o output_s_file\n", argv[0]);
+                                fprintf(stderr, "usage : %s [-v][-s][-q][-m] -i input_c_file -o output_s_file\n", argv[0]);
                                 fprintf(stderr, "-v option prints each grammar rule processed\n");
                                 fprintf(stderr, "-s option prints the symbol table at the end of parsing\n");
                                 fprintf(stderr, "-q option prints the quad list at the end of parsing\n");
+                                fprintf(stderr, "-m option prints some debugging informations during the MIPS assembly code generation\n");
                                 fprintf(stderr, "-i file.c indicates in which file the compiler reads the C code\n");
                                 fprintf(stderr, "-o file.s indicates in which file the compiler writes the MIPS assembly code\n");
                                 return 1;
