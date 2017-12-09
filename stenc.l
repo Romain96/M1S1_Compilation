@@ -87,8 +87,13 @@ return 		"return"
                         }
 {array_reference}       {
                             yylval.array_reference = array_parser_parse_reference(yytext);
-                            char *id = __array_parser_extract_reference_identifier(yytext);
-                            printf("array_ref : id is %s\n", id);
+                            char user_identifier_prefix[] = "__mips__";
+                            char *user_id = __array_parser_extract_reference_identifier(yytext);
+                            char *id = malloc((strlen(user_id) + strlen(user_identifier_prefix) + 1) * sizeof(char));
+                            strcat(id, user_identifier_prefix);
+                            strcat(id, user_id);
+                            free(yylval.array_reference->identifier);
+                            yylval.array_reference->identifier = id;
                             if (symbol_lookup(symbol_table, id) == NULL)
                                 symbol_add(&symbol_table, id);
                             return INT_ARRAY_REFERENCE;

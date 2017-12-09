@@ -6,6 +6,7 @@
 // structure représentant les tableaux ou les références de tableaux
 struct stenc_array
 {
+	char *identifier;		// nom du tableau (tableau et références)
 	int number_of_dimensions;	// nombre de dimensions (tableau et références)
 	int *size_of_dimensions;	// taille de chaque dimension (tableau uniquement)
 	int *index_of_dimensions;	// indice dans chaque dimension (référence uniquement)

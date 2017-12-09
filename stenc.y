@@ -87,6 +87,7 @@ program:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
                 printf("Match !!!\n");
 		printf("Main returns with value %d\n", $1.result->int_value);
                 return 0;
@@ -102,6 +103,7 @@ main_func:
 		$$.truelist = NULL;
 		$$.falselist = NULL;
 		$$.nextlist = NULL;
+                $$.array_value = NULL;
 	}
 	| TYPE_INT MAIN LEFT_BRACE RETURN statement RIGHT_BRACE
 	{
@@ -111,6 +113,7 @@ main_func:
 		$$.truelist = NULL;
 		$$.falselist = NULL;
 		$$.nextlist = NULL;
+                $$.array_value = NULL;
 	}
 	;	
 
@@ -129,6 +132,7 @@ statement_list:
                         list_complete_to_end($2.nextlist);
                 }
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         | statement
         {
@@ -139,6 +143,7 @@ statement_list:
                 $$.falselist = $1.truelist;
                 list_complete_to_end($1.nextlist);
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         ;
 
@@ -151,6 +156,7 @@ statement:
                 $$.truelist = $1.truelist;
                 $$.falselist = $1.falselist;
                 $$.nextlist = $1.nextlist;
+                $$.array_value = NULL;
 	}
         | control_struct
         {
@@ -160,6 +166,7 @@ statement:
                 $$.truelist = $1.truelist;
                 $$.falselist = $1.falselist;
                 $$.nextlist = $1.nextlist;
+                $$.array_value = NULL;
         }
         ;
 
@@ -181,6 +188,7 @@ control_struct:
                 $$.falselist = NULL;
                 $$.code = list_concat($3.code, $5.code);
                 $$.result = NULL;
+                $$.array_value = NULL;
         }
         | IF LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET instruction_block ELSE if_else_goto instruction_block
         {
@@ -204,6 +212,7 @@ control_struct:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.result = NULL;
+                $$.array_value = NULL;
         }
         | WHILE LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET instruction_block
         {
@@ -223,6 +232,7 @@ control_struct:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.code = list_concat($3.code, list_concat(list_new(new_quad), $5.code));
+                $$.array_value = NULL;
         }
         | FOR LEFT_ROUND_BRACKET for_init SEMICOLON condition SEMICOLON for_iterator RIGHT_ROUND_BRACKET instruction_block
         {
@@ -258,6 +268,7 @@ control_struct:
                 $$.result = NULL;
                 $$.truelist = NULL;
                 $$.falselist = NULL;
+                $$.array_value = NULL;
         }
         ;
 
@@ -270,6 +281,7 @@ if_else_goto:
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, NULL);                                                                                                
                 $$.code = list_new(new_quad);
                 $$.nextlist = list_new(new_quad);
+                $$.array_value = NULL;
         }
         ;
 
@@ -292,6 +304,7 @@ for_init:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
 	}
         ;
 
@@ -315,6 +328,7 @@ instruction_block:
                 $$.falselist = $2.falselist;
                 $$.code = $2.code;
                 $$.nextlist = $2.nextlist;
+                $$.array_value = $2.array_value;
         }
         ;
 
@@ -344,6 +358,7 @@ expression:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
 	}
 	| IDENTIFIER DECREASE
 	{
@@ -370,6 +385,7 @@ expression:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
 	}
         | expression PLUS expression
         {
@@ -381,6 +397,7 @@ expression:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         | expression MINUS expression
         {
@@ -392,6 +409,7 @@ expression:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         | expression MULTIPLY expression
         {
@@ -403,6 +421,7 @@ expression:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         | expression DIVIDE expression
         {
@@ -414,6 +433,7 @@ expression:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         | '(' expression ')'
         {
@@ -423,6 +443,7 @@ expression:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         | declaration_or_assignment
         {
@@ -432,6 +453,7 @@ expression:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = $1.array_value;
         }
 	| INCREASE IDENTIFIER
 	{
@@ -458,6 +480,7 @@ expression:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
 	}
 	| DECREASE IDENTIFIER
 	{
@@ -484,6 +507,7 @@ expression:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
 	}
         | INTEGER
         {
@@ -496,6 +520,7 @@ expression:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         | INT_ARRAY
         {
@@ -516,6 +541,7 @@ expression:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         | print_function_call
         ;
@@ -523,7 +549,7 @@ expression:
 declaration_or_assignment: 
         TYPE_INT IDENTIFIER
         {
-                printf("expression -> TYPE_INT IDENTIFIER\n");
+                printf("declaration_or_assignment -> TYPE_INT IDENTIFIER\n");
 		struct symbol *id = symbol_lookup(symbol_table, $2);
                 // maintenant l'id est déclaré mais non initialisé
                 id->is_declared = true;
@@ -535,7 +561,7 @@ declaration_or_assignment:
         }
 	| IDENTIFIER ASSIGNMENT expression
 	{
-		printf("expression -> IDENTIFIER ASSIGNMENT expression\n");
+		printf("declaration_or_assignment -> IDENTIFIER ASSIGNMENT expression\n");
 		struct symbol *id = symbol_lookup(symbol_table, $1);
                 // l'id doit avoir été déclaré précédemment
                 if (!id->is_declared)
@@ -552,9 +578,68 @@ declaration_or_assignment:
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
 	}
+        | IDENTIFIER ASSIGNMENT INT_ARRAY_REFERENCE
+        {
+                printf("declaration_or_assignment -> IDENTIFIER ASSIGNMENT INT_ARRAY_REFERENCE\n");
+                // récupération du symbole de la variable à affecter
+                struct symbol *id = symbol_lookup(symbol_table, $1);
+                // récupération du symbole contenant le nom du tableau
+                struct symbol *arr = symbol_lookup(symbol_table, $3->identifier);
+                // maintenant l'id est affecté (qu'il l'est été ou non)
+                id->is_set = true;
+                // vérification de la validité des indices
+                for (int i = 0; i < arr->int_array_value->number_of_dimensions; i++)
+                {
+                        // chaque indice doit être inférieur à la taile de la dimension correspondante
+                        if ($3->index_of_dimensions[i] >= arr->int_array_value->size_of_dimensions[i])
+                        {
+                                fprintf(stderr, "semantic error : cannot access index %d of array %s which exceeds size the size of its dimension which is %d\n", 
+                                $3->index_of_dimensions[i], arr->identifier + 8, arr->int_array_value->size_of_dimensions[i]);
+                                exit(1);
+                        }
+                }
+
+                // calcul de l'adresse de l'élément à accéder
+                int address = 0;
+                int i = 0;
+                for (i = 0; i < arr->int_array_value->number_of_dimensions - 1; i++)
+                {
+                        address += arr->int_array_value->size_of_dimensions[i] * $3->index_of_dimensions[i];
+                }
+                address += $3->index_of_dimensions[i];
+                address = address * MIPS_REGISTER_SIZE_IN_BYTES;
+                printf("adress to access is %d\n", address);
+                // ajout d'un nouveau symbole contenant
+                struct symbol *addr = symbol_new_temp(&symbol_table);
+                addr->int_value = address;
+                // génération du quad (QUAD_ARRAY_READ)
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_READ, id, arr, addr, false, NULL);
+                $$.result = id;
+                $$.code = list_new(new_quad);
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.nextlist = NULL;
+                $$.array_value = NULL;
+        }
         | TYPE_INT IDENTIFIER ASSIGNMENT expression
         {
-                printf("expression -> TYPE_INT IDENTIFIER ASSIGNMENT expression\n");
+                printf("declaration_or_assignment -> TYPE_INT IDENTIFIER ASSIGNMENT expression\n");
+                // la variable expression doit être un entier (pas de chaines de caractères ou de tableaux/références)
+                if ($4.result == NULL || $4.array_value)
+                {
+                        fprintf(stderr, "semantic error : cannot assign an integer array to the integer variable %s\n", $2 + 8);
+                        exit(1);
+                }
+                if ($4.result->is_string_litteral)
+                {
+                        fprintf(stderr, "semantic error : cannot assign a string litteral to the integer variable %s\n", $2);
+                        exit(1);
+                }
+                if ($4.result->is_int_array)
+                {
+                        fprintf(stderr, "semantic error : cannot assign an integer array to the integer variable %s\n", $2);
+                        exit(1);
+                }
 		struct symbol *id = symbol_lookup(symbol_table, $2);
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $4.result, NULL, false, NULL);
                 // maintenant l'id est déclaré et initialisé
@@ -565,10 +650,11 @@ declaration_or_assignment:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         | TYPE_INT IDENTIFIER LEFT_BRACKET RIGHT_BRACKET ASSIGNMENT INT_ARRAY
         {
-                printf("expression -> TYPE_INT IDENTIFIER LEFT_BRACKET RIGHT_BRACKET ASSIGNMENT INT_ARRAY\n");
+                printf("declaration_or_assignment -> TYPE_INT IDENTIFIER LEFT_BRACKET RIGHT_BRACKET ASSIGNMENT INT_ARRAY\n");
 		struct symbol *id = symbol_lookup(symbol_table, $2);
                 // maintenant l'id est déclaré et initialisé
                 id->is_declared = true;
@@ -582,7 +668,6 @@ declaration_or_assignment:
                 struct quad *new_quad = NULL;
                 int index = 0;
                 $$.code = NULL;
-                printf("size_of_data %d\n", $6->size_of_data);
                 for (int i = 0; i < $6->size_of_data; i++)
                 {
                         // génération d'un nouveau temporaire contenant l'adresse
@@ -619,6 +704,7 @@ condition:
                 $$.code = list_concat($1.code, $3.code);
                 $$.result = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         | condition BOOL_AND condition
         {
@@ -634,6 +720,7 @@ condition:
                 $$.code = list_concat($1.code, $3.code);
                 $$.result = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         | BOOL_NOT condition
         {
@@ -644,6 +731,7 @@ condition:
                 $$.truelist = $2.falselist;
                 $$.falselist = $2.truelist;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         | LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET
         {
@@ -672,6 +760,7 @@ condition:
                 $$.code = list_concat(list_new(new_quad_true), list_new(new_quad_false));
                 $$.result = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         | IDENTIFIER relop IDENTIFIER
         {
@@ -739,6 +828,7 @@ condition:
                 $$.code = list_concat(list_new(new_quad_true), list_new(new_quad_false));
                 $$.result = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         ;
 
@@ -788,6 +878,7 @@ print_function_call:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         | PRINT_INTEGER LEFT_ROUND_BRACKET INTEGER RIGHT_ROUND_BRACKET
         {
@@ -800,6 +891,7 @@ print_function_call:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         | PRINT_INTEGER LEFT_ROUND_BRACKET IDENTIFIER RIGHT_ROUND_BRACKET
         {
@@ -811,6 +903,7 @@ print_function_call:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                $$.array_value = NULL;
         }
         ;
 

@@ -127,7 +127,6 @@ void __mips_write_symbol_table(struct mips_generator *mips)
                                 strncat(line_to_write, value, strlen(value));
                         }
                         strncat(line_to_write, "0\n", 2);
-                        printf("quad_init with value %s\n", line_to_write);
                         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
                 }
                 // variable entière
@@ -645,7 +644,7 @@ void __mips_generate_array_read(struct mips_generator *mips, struct quad *q)
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 2) placer l'offset (déjà multiplié par NBO = 4) de l'élément à lire dans le registre $t2 (lw $t2, res)
-        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "li $t2, %s\n", q->res->identifier);
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t2, %s\n", q->res->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 3) Additionner l'adresse de base avec l'offset et placer le résultat dans $t1 (add $t1, $t1, $t2)
@@ -657,7 +656,7 @@ void __mips_generate_array_read(struct mips_generator *mips, struct quad *q)
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 5) placer la valeur de $t0 dans arg1
-        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw %s, $t0\n", q->arg1->identifier);
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw $t0, %s\n", q->arg1->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 }
 

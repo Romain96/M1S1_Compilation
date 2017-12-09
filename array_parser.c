@@ -180,6 +180,9 @@ struct stenc_array *array_parser_parse_text(char *text)
 		exit(EXIT_FAILURE);
 	}
 
+	// extraction du nom
+	char *id = __array_parser_extract_reference_identifier(text);
+
 	// comptage du nombre de valeurs
 	int nval = __array_parser_count_values(text);
 
@@ -189,7 +192,8 @@ struct stenc_array *array_parser_parse_text(char *text)
 	// allocation de la mémoire pour la structure int_array
 	struct stenc_array *arr = malloc(sizeof(struct stenc_array));
 	// et ses données
-	arr->index_of_dimensions = NULL;	// idem
+	arr->identifier = id;
+	arr->index_of_dimensions = NULL;
 	arr->data = malloc(nval * sizeof(int));
 	arr->number_of_dimensions = ndim;
 	arr->size_of_data = nval;
@@ -344,6 +348,9 @@ int *__array_parser_count_index_of_dimensions(char *text, int ndim)
 // parse toute la référence dans une structure int_array_reference
 struct stenc_array *array_parser_parse_reference(char *text)
 {
+	// extraction du nom
+	char *id = __array_parser_extract_reference_identifier(text);
+
 	// recherche du nombre dimensions
 	int ndim = __array_parser_count_reference_dimensions(text);
 	
@@ -364,6 +371,7 @@ struct stenc_array *array_parser_parse_reference(char *text)
 	}
 
 	// remplissage de la structure
+	arr->identifier = id;
 	arr->number_of_dimensions = ndim;
 	arr->index_of_dimensions = index_array;
 	arr->size_of_dimensions = NULL;	// tableaux uniquement
@@ -375,6 +383,8 @@ struct stenc_array *array_parser_parse_reference(char *text)
 // libère la mémoire allouée par la structure
 void array_parser_free(struct stenc_array *arr)
 {
+	if (arr->identifier != NULL)
+		free(arr->identifier);
 	if (arr->index_of_dimensions != NULL)
 		free(arr->index_of_dimensions);
 	if (arr->size_of_dimensions != NULL)
@@ -388,6 +398,7 @@ void array_parser_free(struct stenc_array *arr)
 void array_parser_print(struct stenc_array *arr)
 {
 	printf("STENC_STRUCT\n");
+	printf("Identifier id %s\n", arr->identifier);
 	printf("Number of dimensions is %d\n", arr->number_of_dimensions);
 	printf("Number of values is %d\n", arr->size_of_data);
 	printf("Size of each dimension :\n");
