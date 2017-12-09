@@ -23,6 +23,7 @@
         bool _verbose_output = false;   // affiche les règles de la grammaire à chaque action
         bool _print_symbol_table = false;
         bool _print_quad_list = false;
+        bool _mips_verbose = false;     // affiche les actions faites par le mips_generator
         char * _input_c_file = NULL;
         char * _output_s_file = NULL;
 %}
@@ -1083,7 +1084,7 @@ int main(int argc, char *argv[])
         int c;
         opterr = 0;
 
-        while ((c = getopt (argc, argv, "vsqi:o:")) != -1)
+        while ((c = getopt (argc, argv, "vsqmi:o:")) != -1)
                 switch (c)
                 {
                         case 'v':
@@ -1094,6 +1095,9 @@ int main(int argc, char *argv[])
                                 break;
                         case 'q':
                                 _print_quad_list = true;
+                                break;
+                        case 'm':
+                                _mips_verbose = true;
                                 break;
                         case 'i':
                                 _input_c_file = optarg;

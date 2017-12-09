@@ -82,7 +82,6 @@ return 		"return"
                         }
 {int_array}             {
                             yylval.array = array_parser_parse_text(yytext);
-                            array_parser_print(yylval.array);
                             return INT_ARRAY;
                         }
 {array_reference}       {
@@ -105,7 +104,6 @@ return 		"return"
                             strcat(yylval.string, yytext);
                             if (symbol_lookup(symbol_table, yylval.string) == NULL)
                                 symbol_add(&symbol_table, yylval.string); 
-                            printf("identifier name is %s\n", yylval.string);
                             return IDENTIFIER; 
                         }
 {string}                { 

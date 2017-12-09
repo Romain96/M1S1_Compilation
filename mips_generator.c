@@ -6,6 +6,7 @@
 #include "quad.h"
 #include "list.h"
 #include "mips_generator.h"
+extern bool _mips_verbose;
 
 // Fonction             : mips_setup
 // Argument(s)          : - filename : le nom du fichier dans lequel écrire le code MIPS
@@ -49,9 +50,12 @@ struct mips_generator *mips_setup(char *filename, struct symbol *symbol_table, s
 // Commentaire(s)       : écrit tout le code assembleur
 void mips_generate_assembly_code(struct mips_generator *mips)
 {
-	printf("\n//////////////////////////////////////////////////\n");
-	printf("///////// Writting MIPS assembly code... /////////\n");
-	printf("//////////////////////////////////////////////////\n");
+        if (_mips_verbose)
+        {
+	        printf("\n//////////////////////////////////////////////////\n");
+	        printf("///////// Writting MIPS assembly code... /////////\n");
+	        printf("//////////////////////////////////////////////////\n");
+        }
         // écriture de la table des symboles en segment .data
         __mips_write_symbol_table(mips);
 
@@ -60,7 +64,8 @@ void mips_generate_assembly_code(struct mips_generator *mips)
 
         // terminaison de la génération du code assembleur
         mips_terminate(mips);
-	printf("MIPS assembly code generated successfully\n");
+        if (_mips_verbose)
+	        printf("MIPS assembly code generated successfully\n");
 }
 
 // Fonction             : mips_terminate
@@ -100,7 +105,8 @@ void mips_terminate(struct mips_generator *mips)
 // Commentaire(s)       : écriture de la table des symboles en segment .data
 void __mips_write_symbol_table(struct mips_generator *mips)
 {
-	printf("Writting symbol table...\n");
+        if (_mips_verbose)
+	        printf("Writting symbol table...\n");
         // génération du segment .data
         char data_segment[] = ".data\n";
         fwrite(&data_segment, sizeof(char), strlen(data_segment), mips->output_file);
@@ -137,7 +143,8 @@ void __mips_write_symbol_table(struct mips_generator *mips)
 		}
                 iterator = iterator->next;
         }
-        printf("Symbol table written successfully\n");
+        if (_mips_verbose)
+                printf("Symbol table written successfully\n");
 }
 
 // Fonction             : __mips_write_quad_list
@@ -148,7 +155,8 @@ void __mips_write_symbol_table(struct mips_generator *mips)
 // Commentaire(s)       : écriture des instructions en segment .text
 void __mips_write_quad_list(struct mips_generator *mips)
 {
-	printf("Writting quad list...\n");
+        if (_mips_verbose)
+	        printf("Writting quad list...\n");
         // génération du segent .text
         char text_segment[] = ".text\n";
         fwrite(&text_segment, sizeof(char), strlen(text_segment), mips->output_file);
@@ -213,7 +221,7 @@ void __mips_write_quad_list(struct mips_generator *mips)
                                         break;
                                 default:
                                         fprintf(stderr, "[MIPS_GENERATOR::__mips_write_quad_list] ERROR quad type is unknown\n");
-                                        return 1;
+                                        exit(EXIT_FAILURE);
                         }
                 }
                 // quad suivant
@@ -224,7 +232,8 @@ void __mips_write_quad_list(struct mips_generator *mips)
         char prgramm_end[] = "label_end: li $v0, 10\nsyscall\n";
         fwrite(&prgramm_end, sizeof(char), strlen(prgramm_end), mips->output_file);
 
-        printf("quad list written successfully\n");
+        if (_mips_verbose)
+                printf("quad list written successfully\n");
 }
 
 //===============================================================================
