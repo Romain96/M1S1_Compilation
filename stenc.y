@@ -137,14 +137,33 @@ statement_list:
                         printf("statement_list -> statement_list statement\n");
                 $$.result = $1.result;
                 $$.code = list_concat($1.code, $2.code);
-                $$.truelist = NULL;
-                $$.falselist = NULL;
                 if ($1.code != NULL && $2.code != NULL)
                 {
                         quad_label($2.code->current_quad);
                         list_complete($1.nextlist, $2.code->current_quad->label_name);
                         list_complete_to_end($2.nextlist);
                 }
+                // libération de la mémoire des listes déjà complétées
+                if ($1.truelist != NULL)
+                        $1.truelist = NULL;
+                if ($2.truelist != NULL)
+                        $2.truelist = NULL;
+                if ($1.falselist != NULL)
+                        $1.falselist = NULL;
+                if ($2.falselist != NULL)
+                        $2.falselist = NULL;
+                if ($1.nextlist)
+                        free($1.nextlist);
+                if ($2.nextlist)
+                        free($2.nextlist);
+                if ($1.array_value != NULL)
+                        free($1.array_value);
+                if ($2.array_value != NULL)
+                        free($2.array_value);
+
+                // les nouvelles listes sont vides
+                $$.truelist = NULL;
+                $$.falselist = NULL;
                 $$.nextlist = NULL;
                 $$.array_value = NULL;
         }
@@ -152,13 +171,26 @@ statement_list:
         {
                 if (_verbose_output)
                         printf("statement_list -> statement\n");
+
                 $$.result = $1.result;
                 $$.code = $1.code;
-                $$.truelist = $1.truelist;
-                $$.falselist = $1.truelist;
                 list_complete_to_end($1.nextlist);
-                $$.nextlist = NULL;
+
+                // libération de la mémoire des listes déjà complétées
+                if ($1.truelist != NULL)
+                        $1.truelist = NULL;
+                if ($1.falselist != NULL)
+                        $1.falselist = NULL;
+                if ($1.nextlist)
+                        free($1.nextlist);
+                if ($1.array_value != NULL)
+                        free($1.array_value);
+
+                // les nouvelles listes sont vides
+                $$.truelist = NULL;
+                $$.falselist = NULL;
                 $$.array_value = NULL;
+                $$.nextlist = NULL;
         }
         ;
 
@@ -191,17 +223,24 @@ control_struct:
         IF LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET instruction_block
         {
                 if (_verbose_output)
-                        printf("control_struct -> IF (condition)\n");               
+                        printf("control_struct -> IF (condition)\n");    
+
                 // on complète la truelist de condition avec le premier quad du bloc d'instructions
                 quad_label($5.code->current_quad);
                 list_complete($3.truelist, $5.code->current_quad->label_name);
+
                 // la nextlist est la concaténation de la falselist de condition et et de la nextlist du bloc d'instructions
                 $$.nextlist = list_concat($3.falselist, $5.nextlist);
+
                 // génération du goto inconditionnel
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, NULL);
+
                 // la nextlist du bloc est la concaténation de la nextlist du bloc et du nouveau quad
                 $$.nextlist = list_concat($$.nextlist, list_new(new_quad));
+
                 // le code est le tout
+                if ($3.truelist != NULL)
+                        free($3.truelist);
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.code = list_concat($3.code, $5.code);
@@ -212,21 +251,32 @@ control_struct:
         {
                 if (_verbose_output)
                         printf("control_struct -> IF (condition) else\n");
+
                 // on complète la truelist de condition avec le premier quad du premier bloc d'instructions
                 quad_label($5.code->current_quad);
                 list_complete($3.truelist, $5.code->current_quad->label_name);
+
                 // on complète la falselist de condition avec le premier quad du second bloc d'instructions
                 quad_label($8.code->current_quad);
                 list_complete($3.falselist, $8.code->current_quad->label_name);
+
                 // la nextlist est la concaténation des nextlists des deux blocs d'instructions
                 $$.nextlist = list_concat($5.nextlist, $8.nextlist);
+
                 // la nextlist est la concaténation de la nextlist et du goto entre if et else
                 $$.nextlist = list_concat($$.nextlist, $7.nextlist);
+
                 // on génère un goto inconditionnel vers la sortie
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, NULL);
+
                 // la nextlist est la concaténation de la nextlist et du goto nouvellement généré
                 $$.nextlist = list_concat($$.nextlist, list_new(new_quad));
+
                 // le code est le tout
+                if ($3.truelist != NULL)
+                        free($3.truelist);
+                if ($3.falselist != NULL)
+                        free($3.falselist);
                 $$.code = list_concat($3.code, list_concat($5.code, $8.code));
                 $$.truelist = NULL;
                 $$.falselist = NULL;
@@ -237,17 +287,24 @@ control_struct:
         {
                 if (_verbose_output)
                         printf("control_struct -> WHILE (condition)\n");
+
                 // on complète la truelist de condition par le premier quad du bloc d'instruction
                 quad_label($5.code->current_quad);
                 list_complete($3.truelist, $5.code->current_quad->label_name);
+
                 // la nextlist est la falselist de la condition
                 $$.nextlist = $3.falselist;
+
                 // génération du goto inconditionnel
                 quad_label($3.code->current_quad);
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $3.code->current_quad->label_name);
+                
                 // on complète la nextlist du bloc d'instructions avec le premier quad de la condition
                 list_complete($5.nextlist, $3.code->current_quad->label_name);
+
                 // le code est le tout
+                if ($3.truelist != NULL)
+                        free($3.truelist);
                 $$.result = NULL;
                 $$.truelist = NULL;
                 $$.falselist = NULL;
@@ -258,11 +315,14 @@ control_struct:
         {
                 if (_verbose_output)
                         printf("control_struct -> FOR (for_init; condition; for_iterator)\n");
+
                 // on complète la truelist de condition par le premier quad du bloc d'instructions
                 quad_label($9.code->current_quad);
                 list_complete($5.truelist, $9.code->current_quad->label_name);
+
                 // la nextlist est la falselist de condition
                 $$.nextlist = $5.falselist;
+
                 // on génère l'incrémentation/décrémentation
                 struct quad *iterator;
                 struct symbol *incr = symbol_new_temp(&symbol_table);
@@ -281,10 +341,14 @@ control_struct:
                                 fprintf(stderr, "ni incr ni decr ?\n");
                                 exit(1);
                 }
+
                 // et le goto inconditionnel vers la condition
                 quad_label($5.code->current_quad);
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $5.code->current_quad->label_name);
+                
                 // le code est le tout
+                if ($5.falselist != NULL)
+                        free($5.falselist);
                 $$.code = list_concat($3.code, list_concat($5.code, list_concat($9.code, list_concat(list_new(iterator), list_new(new_quad)))));
                 $$.result = NULL;
                 $$.truelist = NULL;
@@ -297,11 +361,12 @@ if_else_goto:
         {
                 if (_verbose_output)
                         printf("if_else_goto -> epsilon");
+
                 // on génère le code d'un goto incomplet entre le if et le else
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, NULL);
                 $$.result = NULL;
                 $$.truelist = NULL;
-                $$.falselist = NULL;
-                struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, NULL);                                                                                                
+                $$.falselist = NULL;                                                                                                         
                 $$.code = list_new(new_quad);
                 $$.nextlist = list_new(new_quad);
                 $$.array_value = NULL;
@@ -313,13 +378,16 @@ for_init:
 	{
                 if (_verbose_output)
 		        printf("for_init -> IDENTIFIER ASSIGNMENT expression\n");
+
 		struct symbol *id = symbol_lookup(symbol_table, $1);
+
                 // l'id doit être déclaré
                 if (!id->is_declared)
                 {
                         fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
                         exit(1);
                 }
+
                 // l'id est set (qu'il l'ai été ou non)
                 id->is_set = true;
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $3.result, NULL, false, NULL);
@@ -362,6 +430,7 @@ expression:
 	{
                 if (_verbose_output)
 		        printf("expression -> IDENTIFIER INCREASE (low priority)\n");
+
 		struct symbol *id = symbol_lookup(symbol_table, $1);
 
                 // l'id doit être déclaré
@@ -388,9 +457,14 @@ expression:
                         exit(1);
                 }
 
+                // génération d'un nouveau temporaire contenant la valeur 1
 		struct symbol *incr = symbol_new_temp(&symbol_table);
 		incr->int_value = 1;
+
+                // génération d'un nouveau temporaire
 		struct symbol *res = symbol_new_temp(&symbol_table);
+
+                // génération d'un nouveau quad codant l'addition
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_PLUS, id, incr, res, false, NULL);
 		$$.result = res;
 		$$.code = list_new(new_quad);
@@ -403,6 +477,7 @@ expression:
 	{
                 if (_verbose_output)
 		        printf("expression -> IDENTIFIER DECREASE (low priority)\n");
+
 		struct symbol *id = symbol_lookup(symbol_table, $1);
 
                 // l'id doit être déclaré
@@ -429,9 +504,14 @@ expression:
                         exit(1);
                 }
 
+                // génération d'un nouveau temporaire contenant la valeur 1
 		struct symbol *incr = symbol_new_temp(&symbol_table);
 		incr->int_value = 1;
+
+                // génération d'un nouveau temporaire
 		struct symbol *res = symbol_new_temp(&symbol_table);
+
+                // génération d'un nouveau quad codant la soustraction
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_MINUS, id, incr, res, false, NULL);
 		$$.result = res;
 		$$.code = list_new(new_quad);
@@ -445,8 +525,13 @@ expression:
                 if (_verbose_output)
                         printf("expression -> expression + expression\n");
 
+                // génération d'un nouveau temporaire
                 struct symbol *res = symbol_new_temp(&symbol_table);
+
+                // génération d'un nouveau quad codant l'addition
                 struct quad *new = quad_gen(&quad_list, QUAD_PLUS, $1.result, $3.result, res, false, NULL);
+
+                // le code est la concaténation des codes des deux expression et du nouveau quad
                 $$.result = res;
                 $$.code = list_concat(list_concat($1.code, $3.code), list_new(new));
                 $$.truelist = NULL;
@@ -459,8 +544,13 @@ expression:
                 if (_verbose_output)
                         printf("expression -> expression - expression\n");
 
+                // génération d'un nouveau temporaire
                 struct symbol *res = symbol_new_temp(&symbol_table);
+
+                // génération d'un nouveau quad codant la soustraction
                 struct quad *new = quad_gen(&quad_list, QUAD_MINUS, $1.result, $3.result, res, false, NULL);
+
+                // le code est la concaténation des codes des deux expression et du nouveau quad
                 $$.result = res;
                 $$.code = list_concat(list_concat($1.code, $3.code), list_new(new));
                 $$.truelist = NULL;
@@ -473,9 +563,14 @@ expression:
                 if (_verbose_output)
                         printf("expression -> expression * expression\n");
 
+                // génération d'un nouveau temporaire
                 struct symbol *res = symbol_new_temp(&symbol_table);
+
+                // génération d'un nouveau quad codant la multiplication
                 struct quad *new = quad_gen(&quad_list, QUAD_MULTIPLY, $1.result, $3.result, res, false, NULL);
                 $$.result = res;
+
+                // le code est la concaténation des codes des deux expression et du nouveau quad
                 $$.code = list_concat(list_concat($1.code, $3.code), list_new(new));
                 $$.truelist = NULL;
                 $$.falselist = NULL;
@@ -487,9 +582,14 @@ expression:
                 if (_verbose_output)
                         printf("expression -> expression / expression\n");
 
+                // génération d'un nouveau temporaire
                 struct symbol *res = symbol_new_temp(&symbol_table);
+
+                // génération d'un nouveau quad codant la division
                 struct quad *new = quad_gen(&quad_list, QUAD_DIVIDE, $1.result, $3.result, res, false, NULL);
                 $$.result = res;
+
+                // le code est la concaténation des codes des deux expression et du nouveau quad
                 $$.code = list_concat(list_concat($1.code, $3.code), list_new(new));
                 $$.truelist = NULL;
                 $$.falselist = NULL;
@@ -501,6 +601,7 @@ expression:
                 if (_verbose_output)
                         printf("expression -> ( expression )\n");
 
+                // simple passage du code et du résultat
                 $$.result = $2.result;
                 $$.code = $2.code;
                 $$.truelist = NULL;
@@ -513,6 +614,7 @@ expression:
                 if (_verbose_output)
                         printf("expression -> declaration_or_assignment\n");
 
+                // simple passage du code et du résultat
                 $$.result = $1.result;
                 $$.code = $1.code;
                 $$.truelist = NULL;
@@ -550,10 +652,18 @@ expression:
                         exit(1);
                 }
 
+                // génération d'un nouveau temporaire contenant la valeur 1
 		struct symbol *incr = symbol_new_temp(&symbol_table);
 		incr->int_value = 1;
+                incr->is_constant = true;
+
+                // génération d'un nouveau temporaire
 		struct symbol *res = symbol_new_temp(&symbol_table);
+
+                // génération d'un nouveau quad codant l'addition
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_PLUS, id, incr, res, false, NULL);
+
+                // le code est juste le nouveau quad
 		$$.result = res;
 		$$.code = list_new(new_quad);
                 $$.truelist = NULL;
@@ -592,10 +702,18 @@ expression:
                         exit(1);
                 }
 
+                // génération d'un nouveau temporaire contenant la valeur 1
 		struct symbol *decr = symbol_new_temp(&symbol_table);
 		decr->int_value = 1;
+                decr->is_constant = true;
+
+                // génération d'un nouveau temporaire
 		struct symbol *res = symbol_new_temp(&symbol_table);
+
+                // génération d'un nouveau quad codant la soustraction
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_MINUS, id, decr, res, false, NULL);
+
+                // le code est juste le nouveau quad
 		$$.result = res;
 		$$.code = list_new(new_quad);
                 $$.truelist = NULL;
@@ -637,6 +755,7 @@ expression:
                 if (_verbose_output)
                         printf("expression -> IDENTIFIER\n");
 
+                // recherche du symbole
                 struct symbol *id = symbol_lookup(symbol_table, $1);
                 $$.result = id;
                 $$.code = NULL;
@@ -656,6 +775,7 @@ declaration_or_assignment:
 
                 // on récupère le symbole
 		struct symbol *id = symbol_lookup(symbol_table, $2);
+
                 // maintenant l'id est déclaré mais non initialisé
                 id->is_declared = true;
 		$$.result = id;
@@ -671,16 +791,21 @@ declaration_or_assignment:
 
                 // on récupère le symbole
 		struct symbol *id = symbol_lookup(symbol_table, $1);
+
                 // l'id doit avoir été déclaré précédemment
                 if (!id->is_declared)
                 {
                         fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
                         exit(1);
                 }
+
                 // l'id est désormais initialisé
                 id->is_set = true;
+
                 // on génère le quad de l'affectation
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $3.result, NULL, false, NULL);
+
+                // le code est la concaténation du code de l'expression et du nouveau quad
 		$$.result = id;
 		$$.code = list_concat($3.code, list_new(new_quad));
                 $$.truelist = NULL;
@@ -691,8 +816,10 @@ declaration_or_assignment:
         {
                 if (_verbose_output)
                         printf("declaration_or_assignment -> IDENTIFIER ASSIGNMENT INT_ARRAY_REFERENCE\n");
+
                 // récupération du symbole de la variable à affecter
                 struct symbol *id = symbol_lookup(symbol_table, $1);
+
                 // l'id doit être déclaré
                 if (!id->is_declared)
                 {
@@ -715,6 +842,7 @@ declaration_or_assignment:
 
                 // récupération du symbole contenant le nom du tableau
                 struct symbol *arr = symbol_lookup(symbol_table, $3->identifier);
+
                 // maintenant l'id est affecté (qu'il l'est été ou non)
                 id->is_set = true;
 
@@ -747,24 +875,31 @@ declaration_or_assignment:
                 }
                 address += $3->index_of_dimensions[i];
                 address = address * MIPS_REGISTER_SIZE_IN_BYTES;
+
                 // ajout d'un nouveau symbole contenant l'adresse
                 struct symbol *addr = symbol_new_temp(&symbol_table);
                 addr->int_value = address;
+
                 // génération du quad (QUAD_ARRAY_READ)
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_READ, id, arr, addr, false, NULL);
+
+                // le code est seulement le nouveau quad
                 $$.result = id;
                 $$.code = list_new(new_quad);
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                free($3);
                 $$.array_value = NULL;
         }
         | INT_ARRAY_REFERENCE ASSIGNMENT IDENTIFIER
         {
                 if (_verbose_output)
                         printf("declaration_or_assignment -> INT_ARRAY_REFERENCE ASSIGNMENT IDENTIFIER\n");
+
                 // récupération du symbole de la variable à affecter
                 struct symbol *id = symbol_lookup(symbol_table, $3);
+
                 // la variable doit être de type int (pas int_array ou string_litteral)
                 if (id->is_string_litteral)
                 {
@@ -781,8 +916,10 @@ declaration_or_assignment:
 
                 // récupération du symbole contenant le nom du tableau
                 struct symbol *arr = symbol_lookup(symbol_table, $1->identifier);
+
                 // maintenant le tableau est affecté (qu'il l'est été ou non)
                 arr->is_set = true;
+
                 // vérification de la validité des indices
                 for (int i = 0; i < arr->int_array_value->number_of_dimensions; i++)
                 {
@@ -804,16 +941,21 @@ declaration_or_assignment:
                 }
                 address += $1->index_of_dimensions[i];
                 address = address * MIPS_REGISTER_SIZE_IN_BYTES;
+
                 // ajout d'un nouveau symbole contenant l'addresse
                 struct symbol *addr = symbol_new_temp(&symbol_table);
                 addr->int_value = address;
+
                 // génération du quad (QUAD_ARRAY_WRITE)
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_WRITE, arr, id, addr, false, NULL);
+
+                // le code est seulement le nouveau quad
                 $$.result = id;
                 $$.code = list_new(new_quad);
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                free($1);
                 $$.array_value = NULL;
         }
         | INT_ARRAY_REFERENCE ASSIGNMENT INT_ARRAY_REFERENCE
@@ -907,19 +1049,25 @@ declaration_or_assignment:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
+                free($1);
+                free($3);
                 $$.array_value = NULL;
         }
         | INT_ARRAY_REFERENCE ASSIGNMENT INTEGER
         {
                 if (_verbose_output)
                         printf("declaration_or_assignment -> INT_ARRAY_REFERENCE ASSIGNMENT INTEGER\n");
+
                 // création d'un nouveau temporaire contenant la valeur à affecter
                 struct symbol *id = symbol_new_temp(&symbol_table);
                 id->int_value = $3;
+
                 // récupération du symbole contenant le nom du tableau
                 struct symbol *arr = symbol_lookup(symbol_table, $1->identifier);
+
                 // maintenant le tableau est affecté (qu'il l'est été ou non)
                 arr->is_set = true;
+
                 // vérification de la validité des indices
                 for (int i = 0; i < arr->int_array_value->number_of_dimensions; i++)
                 {
@@ -941,11 +1089,15 @@ declaration_or_assignment:
                 }
                 address += $1->index_of_dimensions[i];
                 address = address * MIPS_REGISTER_SIZE_IN_BYTES;
+
                 // ajout d'un nouveau symbole contenant l'addresse
                 struct symbol *addr = symbol_new_temp(&symbol_table);
                 addr->int_value = address;
+
                 // génération du quad (QUAD_ARRAY_WRITE)
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_WRITE, arr, id, addr, false, NULL);
+
+                // le code est juste le nouveau quad
                 $$.result = id;
                 $$.code = list_new(new_quad);
                 $$.truelist = NULL;
@@ -974,11 +1126,18 @@ declaration_or_assignment:
                         fprintf(stderr, "semantic error : cannot assign an integer array to the integer variable %s\n", $2);
                         exit(1);
                 }
+
+                // recherche du symbole de l'identificateur
 		struct symbol *id = symbol_lookup(symbol_table, $2);
+
+                // génération d'un quad codant l'affectation
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $4.result, NULL, false, NULL);
+                
                 // maintenant l'id est déclaré et initialisé
                 id->is_declared = true;
                 id->is_set = true;
+
+                // le code est la concaténation du code l'expression et du nouveau quad
 		$$.result = id;
 		$$.code = list_concat($4.code, list_new(new_quad));
                 $$.truelist = NULL;
@@ -993,6 +1152,7 @@ declaration_or_assignment:
                 
                 // recherche du symbole de la variable à affecter
                 struct symbol *id = symbol_lookup(symbol_table, $2);
+
                 // le symbole doit être de type int (pas in array ni string_litteral)
                 if (id->is_string_litteral)
                 {
@@ -1003,7 +1163,7 @@ declaration_or_assignment:
 
                 // récupération du symbole contenant le nom du tableau
                 struct symbol *arr = symbol_lookup(symbol_table, $4->identifier);
-                // l'id est set
+                // l'id est initialisé
                 id->is_set = true;
 
                 // vérification de la taille des tableaux (ndim de l'id = ndim de la référence)
@@ -1035,11 +1195,15 @@ declaration_or_assignment:
                 }
                 address += $4->index_of_dimensions[i];
                 address = address * MIPS_REGISTER_SIZE_IN_BYTES;
+
                 // ajout d'un nouveau symbole contenant l'addresse
                 struct symbol *addr = symbol_new_temp(&symbol_table);
                 addr->int_value = address;
+
                 // génération du quad (QUAD_ARRAY_READ)
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_READ, id, arr, addr, false, NULL);
+
+                // le code est juste le nouveau quad
                 $$.result = id;
                 $$.code = list_new(new_quad);
                 $$.truelist = NULL;
@@ -1051,33 +1215,41 @@ declaration_or_assignment:
         {
                 if (_verbose_output)
                         printf("declaration_or_assignment -> TYPE_INT IDENTIFIER LEFT_BRACKET RIGHT_BRACKET ASSIGNMENT INT_ARRAY\n");
-		struct symbol *id = symbol_lookup(symbol_table, $2);
+		
+                struct symbol *id = symbol_lookup(symbol_table, $2);
+
                 // maintenant l'id est déclaré et initialisé
                 id->is_declared = true;
                 id->is_set = true;
                 id->is_int_array = true;
                 id->int_array_value = $6;
+
                 // pour chaque case du tableau il faut générer un quad d'affectation (QUAD_ARRAY_WRITE)
                 // et concaténer le quad dans la liste contenant le quad (les valeurs sont dans l'ordre)
                 struct symbol *address = NULL;
                 struct symbol *value = NULL;
                 struct quad *new_quad = NULL;
-                int index = 0;
                 $$.code = NULL;
+                int index = 0;
+
                 for (int i = 0; i < $6->size_of_data; i++)
                 {
                         // génération d'un nouveau temporaire contenant l'adresse
                         address = symbol_new_temp(&symbol_table);
                         address->int_value = index;
+
                         // génération d'un nouveau temporaire contenant la valeur
                         value = symbol_new_temp(&symbol_table);
                         value->int_value = $6->data[i]; 
+
                         // génération du quad
                         new_quad = quad_gen(&quad_list, QUAD_ARRAY_WRITE, id, value, address, false, NULL);
+
                         // l'adresse de l'élément suivant est 4 octets après (registres de 32 bits)
                         index += MIPS_REGISTER_SIZE_IN_BYTES;
                         $$.code = list_concat($$.code, list_new(new_quad));
                 }
+
                 $$.result = NULL;
                 $$.truelist = NULL;
                 $$.falselist = NULL;
@@ -1091,12 +1263,16 @@ condition:
         {
                 if (_verbose_output)
                         printf("condition -> condition BOOL_OR condition\n");
+
                 // on complète la falselist de expression1 par le premier quad de expression2
                 list_complete($1.falselist, $3.code->current_quad->label_name);
+
                 // la falselist est la falselist de expression2
                 $$.falselist = $3.falselist;
+
                 // la truelist est la concaténation des truelist de expression1 et expression2
                 $$.truelist = list_concat($1.truelist, $3.truelist);
+
                 // le code est la concaténation des codes de expression1 et expression2
                 $$.code = list_concat($1.code, $3.code);
                 $$.result = NULL;
@@ -1107,12 +1283,16 @@ condition:
         {
                 if (_verbose_output)
                         printf("condition -> condition BOOL_OR condition\n");
+
                 // on complète la truelist de expression1 par le numéro du premier quad de expression2
                 list_complete($1.truelist, $3.code->current_quad->label_name);
+
                 // la falselist est la concaténation des falselist de expression1 et expression2
                 $$.falselist = list_concat($1.falselist, $3.falselist);
+
                 // la truelist est la truelist de expression2
                 $$.truelist = $3.truelist;
+
                 // le code est le code des deux expressions
                 $$.code = list_concat($1.code, $3.code);
                 $$.result = NULL;
@@ -1123,6 +1303,7 @@ condition:
         {
                 if (_verbose_output)
                         printf("condition -> BOOL_NOT condition\n");
+
                 // on inverse simplement les truelist et falselist (code et result inchangés)
                 $$.result = $2.result;
                 $$.code = $2.code;
@@ -1135,6 +1316,7 @@ condition:
         {
                 if (_verbose_output)
                         printf("condition -> LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET\n");
+
                 // rien de spécial on transmet juste les listes
                 $$.result = $2.result;
                 $$.code = $2.code;
@@ -1146,16 +1328,22 @@ condition:
         {
                 if (_verbose_output)
                         printf("condition -> IDENTIFIER\n");
+
                 // recherche du symbole dans la table
                 struct symbol *id = symbol_lookup(symbol_table, $1);
+
                 // génération du goto conditionnel : if ID goto ?
                 struct quad *new_quad_true = quad_gen(&quad_list, QUAD_NO_OP, id, NULL, NULL, true, NULL);
+
                 // génération du goto inconditionnel : goto ?
                 struct quad *new_quad_false = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, NULL);
+
                 // la truelist est le quad contenant le goto conditionnel
                 $$.truelist = list_new(new_quad_true);
+
                 // la falselist est le quad contenant le goto inconditionnel
                 $$.falselist = list_new(new_quad_false);
+
                 // le code est la concaténation des truelist et falselist
                 $$.code = list_concat(list_new(new_quad_true), list_new(new_quad_false));
                 $$.result = NULL;
@@ -1166,6 +1354,7 @@ condition:
         {
                 if (_verbose_output)
                         printf("condition -> IDENTIFIER relop IDENTIFIER\n");
+
                 // recherche des deux symboles dans la table
                 struct symbol *id1 = symbol_lookup(symbol_table, $1);
                 struct symbol *id2 = symbol_lookup(symbol_table, $3);
@@ -1219,12 +1408,16 @@ condition:
                                 fprintf(stderr, "relop non reconnu...\n");
                                 exit(1);
                 }
+
                 // génération du goto inconditionnel : goto ?
                 struct quad *new_quad_false = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, NULL);
+
                 // la truelist est le quad contenant le goto conditionnel
                 $$.truelist = list_new(new_quad_true);
+
                 // la falselist est le quad contenant le goto inconditionnel
                 $$.falselist = list_new(new_quad_false);
+
                 // le code est la concaténation des truelist et falselist
                 $$.code = list_concat(list_new(new_quad_true), list_new(new_quad_false));
                 $$.result = NULL;
@@ -1277,10 +1470,16 @@ print_function_call:
         {
                 if (_verbose_output)
                         printf("print_function_call -> PRINT_STRING LEFT_ROUND_BRACKET STRING RIGHT_ROUND_BRACKET\n");
+                
+                // génération d'un nouveau temporaire contenant la chaine de caractères à afficher
                 struct symbol *new = symbol_new_temp(&symbol_table);
 		new->string_value = $3;
 		new->is_string_litteral = true;
+
+                // génération d'un nouveau quad codant l'affichage de la chaine
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_PRINTF, new, NULL, NULL, false, NULL);
+
+                // le code est juse le nouveau quad
                 $$.result = NULL;
                 $$.code = list_new(new_quad);
                 $$.truelist = NULL;
@@ -1292,9 +1491,15 @@ print_function_call:
         {
                 if (_verbose_output)
                         printf("print_function_call -> PRINT_INTEGER LEFT_ROUND_BRACKET INTEGER RIGHT_ROUND_BRACKET\n");
+                
+                // génération d'un nouveau temporaire contenant la valeur de l'entier
                 struct symbol *new = symbol_new_temp(&symbol_table);
                 new->int_value = $3;
+
+                // génération d'un nouveau quad codant l'affichage d'un entier
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_PRINTI, new, NULL, NULL, false, NULL);
+
+                // le code est juste le nouveau quad
                 $$.result = NULL;
                 $$.code = list_new(new_quad);
                 $$.truelist = NULL;
@@ -1306,8 +1511,14 @@ print_function_call:
         {
                 if (_verbose_output)
                         printf("print_function_call -> PRINT_STRING LEFT_ROUND_BRACKET IDENTIFIER RIGHT_ROUND_BRACKET\n");
+                
+                // recherche du symbole de l'identificateur
                 struct symbol *id = symbol_lookup(symbol_table, $3);
+
+                // génération d'un nouveau quad codant l'affichage d'une variable entière
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_PRINTI, id, NULL, NULL, false, NULL);
+
+                // le code est juste le nouveau quad
                 $$.result = NULL;
                 $$.code = list_new(new_quad);
                 $$.truelist = NULL;
@@ -1324,6 +1535,7 @@ int main(int argc, char *argv[])
         int c;
         opterr = 0;
 
+        // gestion des options avec getopt
         while ((c = getopt (argc, argv, "vsqmi:o:")) != -1)
                 switch (c)
                 {
@@ -1378,10 +1590,12 @@ int main(int argc, char *argv[])
         // affichage de la table des symboles (option -s)
         if (_print_symbol_table)
                 symbol_print(symbol_table);
+
         // affichage de la liste de quads (option -q)
         if (_print_quad_list)
                 quad_print(quad_list);
 
+        // fermeture du fichier
         fclose(input);
 
         // écriture du code MIPS dans le fichier _output_s_file (option -o)

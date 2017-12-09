@@ -1,9 +1,12 @@
 int main()
 {
-	int tableau_un[] = {1,2,3,4,5};
-	int tableau_deux[] = {6,7,8,9,10};
-	tableau_un[0] = tableau_deux[4];
-	int nb = tableau_un[0];
-	printi(nb);
+	int i = 0;
+	int j = 0;
+	for (i = 0; i < j; i++)
+	{
+		printf("valeur de i ");
+		printi(i);
+		printf("\n");
+	}
 	return 0;
 }
