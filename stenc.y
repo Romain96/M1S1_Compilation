@@ -95,6 +95,7 @@ program:
         {
                 if (_verbose_output)
                         printf("program -> main_func\n");
+
                 $$.result = $1.result;
                 $$.code = $1.code;
                 $$.truelist = NULL;
@@ -110,6 +111,7 @@ main_func:
 	{
                 if (_verbose_output)
 		        printf("main_func -> TYPE_INT { statement_list RETURN INTEGER ; }\n");
+
 		$$.result = $6.result;
 		$$.code = list_concat($4.code, $6.code);
 		$$.truelist = NULL;
@@ -121,6 +123,7 @@ main_func:
 	{
                 if (_verbose_output)
 		        printf("main_func -> TYPE_INT { RETURN INTEGER ; }\n");
+
 		$$.result = $5.result;
 		$$.code = $5.code;
 		$$.truelist = NULL;
@@ -135,6 +138,7 @@ statement_list:
         {
                 if (_verbose_output)
                         printf("statement_list -> statement_list statement\n");
+
                 $$.result = $1.result;
                 $$.code = list_concat($1.code, $2.code);
                 if ($1.code != NULL && $2.code != NULL)
@@ -143,23 +147,6 @@ statement_list:
                         list_complete($1.nextlist, $2.code->current_quad->label_name);
                         list_complete_to_end($2.nextlist);
                 }
-                // libération de la mémoire des listes déjà complétées
-                if ($1.truelist != NULL)
-                        $1.truelist = NULL;
-                if ($2.truelist != NULL)
-                        $2.truelist = NULL;
-                if ($1.falselist != NULL)
-                        $1.falselist = NULL;
-                if ($2.falselist != NULL)
-                        $2.falselist = NULL;
-                if ($1.nextlist)
-                        free($1.nextlist);
-                if ($2.nextlist)
-                        free($2.nextlist);
-                if ($1.array_value != NULL)
-                        free($1.array_value);
-                if ($2.array_value != NULL)
-                        free($2.array_value);
 
                 // les nouvelles listes sont vides
                 $$.truelist = NULL;
@@ -176,16 +163,6 @@ statement_list:
                 $$.code = $1.code;
                 list_complete_to_end($1.nextlist);
 
-                // libération de la mémoire des listes déjà complétées
-                if ($1.truelist != NULL)
-                        $1.truelist = NULL;
-                if ($1.falselist != NULL)
-                        $1.falselist = NULL;
-                if ($1.nextlist)
-                        free($1.nextlist);
-                if ($1.array_value != NULL)
-                        free($1.array_value);
-
                 // les nouvelles listes sont vides
                 $$.truelist = NULL;
                 $$.falselist = NULL;
@@ -199,6 +176,7 @@ statement:
 	{
                 if (_verbose_output)
 		        printf("statement -> expression SEMICOLON\n");
+
 		$$.code = $1.code;
 		$$.result = $1.result;
                 $$.truelist = $1.truelist;
@@ -210,6 +188,7 @@ statement:
         {
                 if (_verbose_output)
                         printf("statement -> control_struct\n");
+
                 $$.code = $1.code;
 		$$.result = NULL;
                 $$.truelist = $1.truelist;
@@ -239,8 +218,6 @@ control_struct:
                 $$.nextlist = list_concat($$.nextlist, list_new(new_quad));
 
                 // le code est le tout
-                if ($3.truelist != NULL)
-                        free($3.truelist);
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.code = list_concat($3.code, $5.code);
@@ -273,10 +250,6 @@ control_struct:
                 $$.nextlist = list_concat($$.nextlist, list_new(new_quad));
 
                 // le code est le tout
-                if ($3.truelist != NULL)
-                        free($3.truelist);
-                if ($3.falselist != NULL)
-                        free($3.falselist);
                 $$.code = list_concat($3.code, list_concat($5.code, $8.code));
                 $$.truelist = NULL;
                 $$.falselist = NULL;
@@ -303,8 +276,6 @@ control_struct:
                 list_complete($5.nextlist, $3.code->current_quad->label_name);
 
                 // le code est le tout
-                if ($3.truelist != NULL)
-                        free($3.truelist);
                 $$.result = NULL;
                 $$.truelist = NULL;
                 $$.falselist = NULL;
@@ -347,8 +318,6 @@ control_struct:
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $5.code->current_quad->label_name);
                 
                 // le code est le tout
-                if ($5.falselist != NULL)
-                        free($5.falselist);
                 $$.code = list_concat($3.code, list_concat($5.code, list_concat($9.code, list_concat(list_new(iterator), list_new(new_quad)))));
                 $$.result = NULL;
                 $$.truelist = NULL;
@@ -403,10 +372,14 @@ for_init:
 for_iterator:
         IDENTIFIER INCREASE
         {
+                if (_verbose_output)
+                        printf("for_iterator -> IDENTIFIER INCREASE\n");
                 $$ = INCR;
         }
         | IDENTIFIER DECREASE
         {
+                if (_verbose_output)
+                        printf("for_iterator -> IDENTIFIER DECREASE\n");
                 $$ = DECR;
         }
         ;
@@ -416,6 +389,7 @@ instruction_block:
         {
                 if (_verbose_output)
                         printf("instruction_block -> { statement_list }\n");
+
                 $$.result = $2.result;
                 $$.truelist = $2.truelist;
                 $$.falselist = $2.falselist;
@@ -889,7 +863,6 @@ declaration_or_assignment:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
-                free($3);
                 $$.array_value = NULL;
         }
         | INT_ARRAY_REFERENCE ASSIGNMENT IDENTIFIER
@@ -955,7 +928,6 @@ declaration_or_assignment:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
-                free($1);
                 $$.array_value = NULL;
         }
         | INT_ARRAY_REFERENCE ASSIGNMENT INT_ARRAY_REFERENCE
@@ -1049,8 +1021,6 @@ declaration_or_assignment:
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
-                free($1);
-                free($3);
                 $$.array_value = NULL;
         }
         | INT_ARRAY_REFERENCE ASSIGNMENT INTEGER
