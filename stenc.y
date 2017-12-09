@@ -363,15 +363,28 @@ expression:
                 if (_verbose_output)
 		        printf("expression -> IDENTIFIER INCREASE (low priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $1);
-                // l'id doit être déclaré et initialisé
+
+                // l'id doit être déclaré
                 if (!id->is_declared)
                 {
                         fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
                         exit(1);
                 }
+                // et déjà initialisé
                 if (!id->is_set)
                 {
                         fprintf(stderr, "semantic error : %s hasn't been initialized previously\n", id->identifier+8);
+                        exit(1);
+                }
+                // et aussi être un entier (pas un int_array ou une string_litteral)
+                if (id->is_string_litteral)
+                {
+                        fprintf(stderr, "semantic error : cannot increment or decrement the string litteral variable %s\n", id->identifier+8);
+                        exit(1);
+                }
+                if (id->is_int_array)
+                {
+                        fprintf(stderr, "semantic error : cannot increment or decrement the integer array variable %s\n", id->identifier+8);
                         exit(1);
                 }
 
@@ -391,15 +404,28 @@ expression:
                 if (_verbose_output)
 		        printf("expression -> IDENTIFIER DECREASE (low priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $1);
-                // l'id doit être déclaré et initialisé
+
+                // l'id doit être déclaré
                 if (!id->is_declared)
                 {
                         fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
                         exit(1);
                 }
+                // et déjà initialisé
                 if (!id->is_set)
                 {
                         fprintf(stderr, "semantic error : %s hasn't been initialized previously\n", id->identifier+8);
+                        exit(1);
+                }
+                // et aussi être un entier (pas un int_array ou une string_litteral)
+                if (id->is_string_litteral)
+                {
+                        fprintf(stderr, "semantic error : cannot increment or decrement the string litteral variable %s\n", id->identifier+8);
+                        exit(1);
+                }
+                if (id->is_int_array)
+                {
+                        fprintf(stderr, "semantic error : cannot increment or decrement the integer array variable %s\n", id->identifier+8);
                         exit(1);
                 }
 
@@ -418,6 +444,7 @@ expression:
         {
                 if (_verbose_output)
                         printf("expression -> expression + expression\n");
+
                 struct symbol *res = symbol_new_temp(&symbol_table);
                 struct quad *new = quad_gen(&quad_list, QUAD_PLUS, $1.result, $3.result, res, false, NULL);
                 $$.result = res;
@@ -431,6 +458,7 @@ expression:
         {
                 if (_verbose_output)
                         printf("expression -> expression - expression\n");
+
                 struct symbol *res = symbol_new_temp(&symbol_table);
                 struct quad *new = quad_gen(&quad_list, QUAD_MINUS, $1.result, $3.result, res, false, NULL);
                 $$.result = res;
@@ -444,6 +472,7 @@ expression:
         {
                 if (_verbose_output)
                         printf("expression -> expression * expression\n");
+
                 struct symbol *res = symbol_new_temp(&symbol_table);
                 struct quad *new = quad_gen(&quad_list, QUAD_MULTIPLY, $1.result, $3.result, res, false, NULL);
                 $$.result = res;
@@ -457,6 +486,7 @@ expression:
         {
                 if (_verbose_output)
                         printf("expression -> expression / expression\n");
+
                 struct symbol *res = symbol_new_temp(&symbol_table);
                 struct quad *new = quad_gen(&quad_list, QUAD_DIVIDE, $1.result, $3.result, res, false, NULL);
                 $$.result = res;
@@ -470,6 +500,7 @@ expression:
         {
                 if (_verbose_output)
                         printf("expression -> ( expression )\n");
+
                 $$.result = $2.result;
                 $$.code = $2.code;
                 $$.truelist = NULL;
@@ -481,6 +512,7 @@ expression:
         {
                 if (_verbose_output)
                         printf("expression -> declaration_or_assignment\n");
+
                 $$.result = $1.result;
                 $$.code = $1.code;
                 $$.truelist = NULL;
@@ -493,15 +525,28 @@ expression:
                 if (_verbose_output)
 		        printf("expression -> INCREASE IDENTIFIER (high priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $2);
-                // l'id doit être déclaré et initialisé
+
+                // l'id doit être déclaré
                 if (!id->is_declared)
                 {
                         fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
                         exit(1);
                 }
+                // et déjà initialisé
                 if (!id->is_set)
                 {
                         fprintf(stderr, "semantic error : %s hasn't been initialized previously\n", id->identifier+8);
+                        exit(1);
+                }
+                // et aussi être un entier (pas un int_array ou une string_litteral)
+                if (id->is_string_litteral)
+                {
+                        fprintf(stderr, "semantic error : cannot increment or decrement the string litteral variable %s\n", id->identifier+8);
+                        exit(1);
+                }
+                if (id->is_int_array)
+                {
+                        fprintf(stderr, "semantic error : cannot increment or decrement the integer array variable %s\n", id->identifier+8);
                         exit(1);
                 }
 
@@ -520,16 +565,30 @@ expression:
 	{
                 if (_verbose_output)
 		        printf("expression -> DECREASE IDENTIFIER (high priority)\n");
+
 		struct symbol *id = symbol_lookup(symbol_table, $2);
-                // l'id doit être déclaré et initialisé
+                
+                // l'id doit être déclaré
                 if (!id->is_declared)
                 {
                         fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
                         exit(1);
                 }
+                // et déjà initialisé
                 if (!id->is_set)
                 {
                         fprintf(stderr, "semantic error : %s hasn't been initialized previously\n", id->identifier+8);
+                        exit(1);
+                }
+                // et aussi être un entier (pas un int_array ou une string_litteral)
+                if (id->is_string_litteral)
+                {
+                        fprintf(stderr, "semantic error : cannot increment or decrement the string litteral variable %s\n", id->identifier+8);
+                        exit(1);
+                }
+                if (id->is_int_array)
+                {
+                        fprintf(stderr, "semantic error : cannot increment or decrement the integer array variable %s\n", id->identifier+8);
                         exit(1);
                 }
 
@@ -548,6 +607,8 @@ expression:
         {
                 if (_verbose_output)
                         printf("expression -> INTEGER\n");
+
+                // on crée un nouveau temporaire contenant la valeur de l'entier
                 struct symbol *new = symbol_new_temp(&symbol_table);
                 new->is_constant = true;
                 new->int_value = $1;
@@ -562,6 +623,8 @@ expression:
         {
                 if (_verbose_output)
                         printf("expression -> INT_ARRAY\n");
+                
+                // on passe directement la structure stenc_array dans $$.array_value
                 $$.result = NULL;
                 $$.code = NULL;
                 $$.truelist = NULL;
@@ -573,6 +636,7 @@ expression:
         {
                 if (_verbose_output)
                         printf("expression -> IDENTIFIER\n");
+
                 struct symbol *id = symbol_lookup(symbol_table, $1);
                 $$.result = id;
                 $$.code = NULL;
@@ -589,6 +653,8 @@ declaration_or_assignment:
         {
                 if (_verbose_output)
                         printf("declaration_or_assignment -> TYPE_INT IDENTIFIER\n");
+
+                // on récupère le symbole
 		struct symbol *id = symbol_lookup(symbol_table, $2);
                 // maintenant l'id est déclaré mais non initialisé
                 id->is_declared = true;
@@ -602,6 +668,8 @@ declaration_or_assignment:
 	{
                 if (_verbose_output)
 		        printf("declaration_or_assignment -> IDENTIFIER ASSIGNMENT expression\n");
+
+                // on récupère le symbole
 		struct symbol *id = symbol_lookup(symbol_table, $1);
                 // l'id doit avoir été déclaré précédemment
                 if (!id->is_declared)
@@ -611,6 +679,7 @@ declaration_or_assignment:
                 }
                 // l'id est désormais initialisé
                 id->is_set = true;
+                // on génère le quad de l'affectation
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $3.result, NULL, false, NULL);
 		$$.result = id;
 		$$.code = list_concat($3.code, list_new(new_quad));
@@ -624,16 +693,22 @@ declaration_or_assignment:
                         printf("declaration_or_assignment -> IDENTIFIER ASSIGNMENT INT_ARRAY_REFERENCE\n");
                 // récupération du symbole de la variable à affecter
                 struct symbol *id = symbol_lookup(symbol_table, $1);
+                // l'id doit être déclaré
+                if (!id->is_declared)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
+                        exit(1);
+                }
                 // la variable doit être de type int (pas int_array ou string_litteral)
                 if (id->is_string_litteral)
                 {
-                        fprintf(stderr, "semantic error : cannot assign a integer (array reference) to the string litteral variable %s\n",
+                        fprintf(stderr, "semantic error : cannot assign a integer to the string litteral variable %s\n",
                         id->string_value);
                         exit(1);                
                 }
                 if (id->is_int_array)
                 {
-                        fprintf(stderr, "semantic error : cannot assign a integer (array reference) to the integer array variable %s\n",
+                        fprintf(stderr, "semantic error : cannot assign a integer to the integer array variable %s\n",
                         id->string_value);
                         exit(1);         
                 }
@@ -641,34 +716,37 @@ declaration_or_assignment:
                 // récupération du symbole contenant le nom du tableau
                 struct symbol *arr = symbol_lookup(symbol_table, $3->identifier);
                 // maintenant l'id est affecté (qu'il l'est été ou non)
-                id->is_set = true;                // vérification de la validité des indices
+                id->is_set = true;
+
+                // vérification de la taille des tableaux (ndim de l'id = ndim de la référence)
+                if (arr->int_array_value->number_of_dimensions != $3->number_of_dimensions)
+                {
+                        fprintf(stderr, "semantic error : cannot access a %d-dimensionnal reference when the array is %d-dimensionnal\n",
+                        $3->number_of_dimensions, arr->int_array_value->number_of_dimensions);
+                        exit(1);
+                }     
+                
+                // vérification de la validité des indices
                 for (int i = 0; i < arr->int_array_value->number_of_dimensions; i++)
                 {
                         // chaque indice doit être inférieur à la taile de la dimension correspondante
                         if ($3->index_of_dimensions[i] >= arr->int_array_value->size_of_dimensions[i])
                         {
-                                fprintf(stderr, "semantic error : cannot access index %d of array %s which exceeds size the size of its dimension which is %d\n", 
-                                $3->index_of_dimensions[i], arr->identifier + 8, arr->int_array_value->size_of_dimensions[i]);
+                                fprintf(stderr, "semantic error : index %d is out of range of dimension %d (size is %d) of array %s\n", 
+                                $3->index_of_dimensions[i], i, arr->int_array_value->size_of_dimensions[i], arr->identifier + 8);
                                 exit(1);
                         }
                 }
 
                 // calcul de l'adresse de l'élément à accéder
-                array_parser_print($3);
-                array_parser_print(arr->int_array_value);
                 int address = 0;
                 int i;
                 for (i = 0; i < arr->int_array_value->number_of_dimensions - 1; i++)
                 {
-                        printf ("i %d\n", i);
                         address += $3->index_of_dimensions[i] * arr->int_array_value->size_of_dimensions[i + 1];
-                        printf("index %d, size %d\n", $3->index_of_dimensions[i], arr->int_array_value->size_of_dimensions[i + 1]);
-                        printf("address loop %d\n", address);
                 }
                 address += $3->index_of_dimensions[i];
-                printf("address before MIPS_REGISTER %d\n", address);
                 address = address * MIPS_REGISTER_SIZE_IN_BYTES;
-                printf("and after %d\n", address);
                 // ajout d'un nouveau symbole contenant l'adresse
                 struct symbol *addr = symbol_new_temp(&symbol_table);
                 addr->int_value = address;
@@ -690,13 +768,13 @@ declaration_or_assignment:
                 // la variable doit être de type int (pas int_array ou string_litteral)
                 if (id->is_string_litteral)
                 {
-                        fprintf(stderr, "semantic error : cannot assign a integer (array reference) to the string litteral variable %s\n",
+                        fprintf(stderr, "semantic error : cannot assign a integer to the string litteral variable %s\n",
                         id->string_value);
                         exit(1);                
                 }
                 if (id->is_int_array)
                 {
-                        fprintf(stderr, "semantic error : cannot assign a integer (array reference) to the integer array variable %s\n",
+                        fprintf(stderr, "semantic error : cannot assign a integer to the integer array variable %s\n",
                         id->string_value);
                         exit(1);         
                 }
@@ -711,8 +789,8 @@ declaration_or_assignment:
                         // chaque indice doit être inférieur à la taile de la dimension correspondante
                         if ($1->index_of_dimensions[i] >= arr->int_array_value->size_of_dimensions[i])
                         {
-                                fprintf(stderr, "semantic error : cannot access index %d of array %s which exceeds size the size of its dimension which is %d\n", 
-                                $1->index_of_dimensions[i], arr->identifier + 8, arr->int_array_value->size_of_dimensions[i]);
+                                fprintf(stderr, "semantic error : index %d is out of range of dimension %d (size is %d) of array %s\n", 
+                                $1->index_of_dimensions[i], i, arr->int_array_value->size_of_dimensions[i], arr->identifier + 8);
                                 exit(1);
                         }
                 }
@@ -722,7 +800,7 @@ declaration_or_assignment:
                 int i = 0;
                 for (i = 0; i < arr->int_array_value->number_of_dimensions - 1; i++)
                 {
-                        address += arr->int_array_value->size_of_dimensions[i] * $1->index_of_dimensions[i];
+                        address += arr->int_array_value->size_of_dimensions[i + 1] * $1->index_of_dimensions[i];
                 }
                 address += $1->index_of_dimensions[i];
                 address = address * MIPS_REGISTER_SIZE_IN_BYTES;
@@ -733,6 +811,99 @@ declaration_or_assignment:
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_WRITE, arr, id, addr, false, NULL);
                 $$.result = id;
                 $$.code = list_new(new_quad);
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.nextlist = NULL;
+                $$.array_value = NULL;
+        }
+        | INT_ARRAY_REFERENCE ASSIGNMENT INT_ARRAY_REFERENCE
+        {
+                if (_verbose_output)
+                        printf("declaration_or_assignment -> INT_ARRAY_REFERENCE ASSIGNMENT INT_ARRAY_REFERENCE\n");
+
+                // récupération des deux identificateurs de tableaux
+                struct symbol *lval = symbol_lookup(symbol_table, $1->identifier);
+                struct symbol *rval = symbol_lookup(symbol_table, $3->identifier);
+
+                // vérification des dimensions de lval (lval.ndim = id(lval)->ndim)
+                if ($1->number_of_dimensions != lval->int_array_value->number_of_dimensions)
+                {
+                        fprintf(stderr, "semantic error : cannot access a %d-dimensionnal reference when the array is %d-dimensionnal\n",
+                        $1->number_of_dimensions, lval->int_array_value->number_of_dimensions);
+                        exit(1);
+                }
+
+                // vérification des dimensions de rval (rval.ndim = id(rval)->ndim)
+                if ($1->number_of_dimensions != rval->int_array_value->number_of_dimensions)
+                {
+                        fprintf(stderr, "semantic error : cannot access a %d-dimensionnal reference when the array is %d-dimensionnal\n",
+                        $3->number_of_dimensions, rval->int_array_value->number_of_dimensions);
+                        exit(1);
+                }
+
+                // vérification de la validité des indices de lval
+                for (int i = 0; i < lval->int_array_value->number_of_dimensions; i++)
+                {
+                        // chaque indice doit être inférieur à la taille de la dimension correspondante
+                        if ($1->index_of_dimensions[i] >= lval->int_array_value->size_of_dimensions[i])
+                        {
+                                fprintf(stderr, "semantic error : index %d is out of range of dimension %d (size is %d) of array %s\n", 
+                                $1->index_of_dimensions[i], i, lval->int_array_value->size_of_dimensions[i], lval->identifier + 8);
+                                exit(1);
+                        }
+                }
+
+                // vérification de la validité des indices de rval
+                for (int i = 0; i < rval->int_array_value->number_of_dimensions; i++)
+                {
+                        // chaque indice doit être inférieur à la taille de la dimension correspondante
+                        if ($3->index_of_dimensions[i] >= rval->int_array_value->size_of_dimensions[i])
+                        {
+                                fprintf(stderr, "semantic error : index %d is out of range of dimension %d (size is %d) of array %s\n", 
+                                $3->index_of_dimensions[i], i, rval->int_array_value->size_of_dimensions[i], rval->identifier + 8);
+                                exit(1);
+                        }
+                }
+
+                // calcul de l'addresse de l'élément à affecter (lval)
+                int address_lval = 0;   // adresse de base
+                int i;
+                for (i = 0; i < lval->int_array_value->number_of_dimensions - 1; i++)
+                {
+                        address_lval += $1->index_of_dimensions[i] * lval->int_array_value->size_of_dimensions[i + 1];
+                }
+                address_lval += $1->index_of_dimensions[i];
+                address_lval = address_lval * MIPS_REGISTER_SIZE_IN_BYTES;
+
+                // calcul de l'addresse de la valeur à chercher (rval)
+                int address_rval = 0;   // adresse de base
+                for (i = 0; i < rval->int_array_value->number_of_dimensions - 1; i++)
+                {
+                        address_rval += $3->index_of_dimensions[i] * rval->int_array_value->size_of_dimensions[i + 1];
+                }
+                address_rval += $3->index_of_dimensions[i];
+                address_rval = address_rval * MIPS_REGISTER_SIZE_IN_BYTES;
+
+                // ajout d'un nouveau temporaire contenant la valeur de l'adresse d'accès dans lval
+                struct symbol *addr_lval = symbol_new_temp(&symbol_table);
+                addr_lval->int_value = address_lval;
+
+                // ajout d'un nouveau temporaire contenant la valeur de l'adresse d'accès dans rval
+                struct symbol *addr_rval = symbol_new_temp(&symbol_table);
+                addr_rval->int_value = address_rval;
+
+                // ajout d'un nouveau temporaire contenant le résultat de l'affectation temp = rval[addr_rval]
+                struct symbol *temp = symbol_new_temp(&symbol_table);
+
+                // génération du quad temp = rval[addr_rval]
+                struct quad *assign_temp_rval = quad_gen(&quad_list, QUAD_ARRAY_READ, temp, rval, addr_rval, false, NULL);
+
+                // génération du quad lval[addr_lval] = temp
+                struct quad *assign_lval_temp = quad_gen(&quad_list, QUAD_ARRAY_WRITE, lval, temp, addr_lval, false, NULL);
+
+                // le code est la concaténation de ces deux quads
+                $$.code = list_concat(list_new(assign_temp_rval), list_new(assign_lval_temp));
+                $$.result = temp;
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
@@ -786,8 +957,9 @@ declaration_or_assignment:
         {
                 if (_verbose_output)
                         printf("declaration_or_assignment -> TYPE_INT IDENTIFIER ASSIGNMENT expression\n");
+
                 // la variable expression doit être un entier (pas de chaines de caractères ou de tableaux/références)
-                if ($4.result == NULL || $4.array_value)
+                if ($4.result == NULL || $4.array_value != NULL)
                 {
                         fprintf(stderr, "semantic error : cannot assign an integer array to the integer variable %s\n", $2 + 8);
                         exit(1);
@@ -818,19 +990,30 @@ declaration_or_assignment:
         {
                if (_verbose_output)
                         printf("declaration_or_assignment -> TYPE_INT IDENTIFIER ASSIGNMENT INT_ARRAY_REFERENCE\n");
+                
                 // recherche du symbole de la variable à affecter
                 struct symbol *id = symbol_lookup(symbol_table, $2);
                 // le symbole doit être de type int (pas in array ni string_litteral)
                 if (id->is_string_litteral)
                 {
-                        fprintf(stderr, "semantic error : cannot assign a integer (array reference) to the string litteral variable %s\n",
-                        id->identifier);
+                        fprintf(stderr, "semantic error : cannot assign an integer to the string litteral variable %s\n",
+                        id->identifier + 8);
                         exit(1);
                 }
+
                 // récupération du symbole contenant le nom du tableau
                 struct symbol *arr = symbol_lookup(symbol_table, $4->identifier);
                 // l'id est set
                 id->is_set = true;
+
+                // vérification de la taille des tableaux (ndim de l'id = ndim de la référence)
+                if (arr->int_array_value->number_of_dimensions != $4->number_of_dimensions)
+                {
+                        fprintf(stderr, "semantic error : cannot access a %d-dimensionnal reference when the array is %d-dimensionnal\n",
+                        $4->number_of_dimensions, arr->int_array_value->number_of_dimensions);
+                        exit(1);
+                }
+
                 // vérification de la validité des indices
                 for (int i = 0; i < arr->int_array_value->number_of_dimensions; i++)
                 {
