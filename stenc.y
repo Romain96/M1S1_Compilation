@@ -4,6 +4,7 @@
         #include <stdbool.h>
         #include <ctype.h>
         #include <unistd.h>
+        #include <errno.h>
         #include "symbol_table.h"
         #include "quad.h"
         #include "list.h"
@@ -1132,6 +1133,11 @@ int main(int argc, char *argv[])
 
         // ouverture du fichier
         FILE *input = fopen(_input_c_file, "r");
+        if (input == NULL)
+        {
+                perror("error while opening input file\n");
+                exit(1);
+        }
         yyin = input;
 
         yyparse();

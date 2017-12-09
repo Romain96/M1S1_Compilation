@@ -13,6 +13,9 @@
 %option nounput
 %option noyywrap
 
+comment             "//".*$
+comments            [/][*][^*]*[*]+([^*/][^*]*[*]+)*[/]
+error_comment       [/][*]
 int_array           "{"[{},0-9\- ]*"}"
 integer             [-]?([0-9]|([1-9][0-9]*))
 array_reference     [a-z_][a-zA-Z_]*("["[-]?([0-9]|([1-9][0-9]*))"]")+
@@ -60,6 +63,10 @@ main		"main"[ ]*"()"
 return 		"return"
 
 %%
+
+{comment}               { }
+{comments}              { }
+{error_comment}         { fprintf(stderr, "lexical error : comment is malformed\n"); exit(1); }
 
 {return}[ ]*            { return RETURN; }
 
