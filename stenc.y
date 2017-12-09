@@ -583,6 +583,20 @@ declaration_or_assignment:
                 printf("declaration_or_assignment -> IDENTIFIER ASSIGNMENT INT_ARRAY_REFERENCE\n");
                 // récupération du symbole de la variable à affecter
                 struct symbol *id = symbol_lookup(symbol_table, $1);
+                // la variable doit être de type int (pas int_array ou string_litteral)
+                if (id->is_string_litteral)
+                {
+                        fprintf(stderr, "semantic error : cannot assign a integer (array reference) to the string litteral variable %s\n",
+                        id->string_value);
+                        exit(1);                
+                }
+                if (id->is_int_array)
+                {
+                        fprintf(stderr, "semantic error : cannot assign a integer (array reference) to the integer array variable %s\n",
+                        id->string_value);
+                        exit(1);         
+                }
+
                 // récupération du symbole contenant le nom du tableau
                 struct symbol *arr = symbol_lookup(symbol_table, $3->identifier);
                 // maintenant l'id est affecté (qu'il l'est été ou non)
@@ -614,6 +628,107 @@ declaration_or_assignment:
                 addr->int_value = address;
                 // génération du quad (QUAD_ARRAY_READ)
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_READ, id, arr, addr, false, NULL);
+                $$.result = id;
+                $$.code = list_new(new_quad);
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.nextlist = NULL;
+                $$.array_value = NULL;
+        }
+        | INT_ARRAY_REFERENCE ASSIGNMENT IDENTIFIER
+        {
+                printf("declaration_or_assignment -> INT_ARRAY_REFERENCE ASSIGNMENT IDENTIFIER\n");
+                // récupération du symbole de la variable à affecter
+                struct symbol *id = symbol_lookup(symbol_table, $3);
+                // la variable doit être de type int (pas int_array ou string_litteral)
+                if (id->is_string_litteral)
+                {
+                        fprintf(stderr, "semantic error : cannot assign a integer (array reference) to the string litteral variable %s\n",
+                        id->string_value);
+                        exit(1);                
+                }
+                if (id->is_int_array)
+                {
+                        fprintf(stderr, "semantic error : cannot assign a integer (array reference) to the integer array variable %s\n",
+                        id->string_value);
+                        exit(1);         
+                }
+
+                // récupération du symbole contenant le nom du tableau
+                struct symbol *arr = symbol_lookup(symbol_table, $1->identifier);
+                // maintenant le tableau est affecté (qu'il l'est été ou non)
+                arr->is_set = true;
+                // vérification de la validité des indices
+                for (int i = 0; i < arr->int_array_value->number_of_dimensions; i++)
+                {
+                        // chaque indice doit être inférieur à la taile de la dimension correspondante
+                        if ($1->index_of_dimensions[i] >= arr->int_array_value->size_of_dimensions[i])
+                        {
+                                fprintf(stderr, "semantic error : cannot access index %d of array %s which exceeds size the size of its dimension which is %d\n", 
+                                $1->index_of_dimensions[i], arr->identifier + 8, arr->int_array_value->size_of_dimensions[i]);
+                                exit(1);
+                        }
+                }
+
+                // calcul de l'adresse de l'élément à accéder
+                int address = 0;
+                int i = 0;
+                for (i = 0; i < arr->int_array_value->number_of_dimensions - 1; i++)
+                {
+                        address += arr->int_array_value->size_of_dimensions[i] * $1->index_of_dimensions[i];
+                }
+                address += $1->index_of_dimensions[i];
+                address = address * MIPS_REGISTER_SIZE_IN_BYTES;
+                printf("adress to access is %d\n", address);
+                // ajout d'un nouveau symbole contenant l'addresse
+                struct symbol *addr = symbol_new_temp(&symbol_table);
+                addr->int_value = address;
+                // génération du quad (QUAD_ARRAY_WRITE)
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_WRITE, arr, id, addr, false, NULL);
+                $$.result = id;
+                $$.code = list_new(new_quad);
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.nextlist = NULL;
+                $$.array_value = NULL;
+        }
+        | INT_ARRAY_REFERENCE ASSIGNMENT INTEGER
+        {
+                printf("declaration_or_assignment -> INT_ARRAY_REFERENCE ASSIGNMENT INTEGER\n");
+                // création d'un nouveau temporaire contenant la valeur à affecter
+                struct symbol *id = symbol_new_temp(&symbol_table);
+                id->int_value = $3;
+                // récupération du symbole contenant le nom du tableau
+                struct symbol *arr = symbol_lookup(symbol_table, $1->identifier);
+                // maintenant le tableau est affecté (qu'il l'est été ou non)
+                arr->is_set = true;
+                // vérification de la validité des indices
+                for (int i = 0; i < arr->int_array_value->number_of_dimensions; i++)
+                {
+                        // chaque indice doit être inférieur à la taile de la dimension correspondante
+                        if ($1->index_of_dimensions[i] >= arr->int_array_value->size_of_dimensions[i])
+                        {
+                                fprintf(stderr, "semantic error : cannot access index %d of array %s which exceeds size the size of its dimension which is %d\n", 
+                                $1->index_of_dimensions[i], arr->identifier + 8, arr->int_array_value->size_of_dimensions[i]);
+                                exit(1);
+                        }
+                }
+
+                // calcul de l'adresse de l'élément à accéder
+                int address = 0;
+                int i = 0;
+                for (i = 0; i < arr->int_array_value->number_of_dimensions - 1; i++)
+                {
+                        address += arr->int_array_value->size_of_dimensions[i] * $1->index_of_dimensions[i];
+                }
+                address += $1->index_of_dimensions[i];
+                address = address * MIPS_REGISTER_SIZE_IN_BYTES;
+                printf("adress to access is %d\n", address);
+                // ajout d'un nouveau symbole contenant l'addresse
+                struct symbol *addr = symbol_new_temp(&symbol_table);
+                addr->int_value = address;
+                // génération du quad (QUAD_ARRAY_WRITE)
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_WRITE, arr, id, addr, false, NULL);
                 $$.result = id;
                 $$.code = list_new(new_quad);
                 $$.truelist = NULL;
