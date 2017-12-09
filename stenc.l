@@ -13,8 +13,7 @@
 %option nounput
 %option noyywrap
 
-comment             "//".*$
-comments            [/][*][^*]*[*]+([^*/][^*]*[*]+)*[/]
+comment             ([/][*][^*]*[*]+([^*/][^*]*[*]+)*[/])|("//".*)
 error_comment       [/][*]
 int_array           "{"[{},0-9\- ]*"}"
 integer             [-]?([0-9]|([1-9][0-9]*))
@@ -63,10 +62,6 @@ main		"main"[ ]*"()"
 return 		"return"
 
 %%
-
-{comment}               { }
-{comments}              { }
-{error_comment}         { fprintf(stderr, "lexical error : comment is malformed\n"); exit(1); }
 
 {return}[ ]*            { return RETURN; }
 
@@ -148,6 +143,8 @@ return 		"return"
 
 \t|\n|\r                {  }
 [ ]                     {  }
+{comment}               {  }
+{error_comment}         { fprintf(stderr, "lexical error : comment is malformed\n"); exit(1); }
 .                       { printf("lexical error : char %s not recognized\n", yytext); exit(1); }
 
 %%
