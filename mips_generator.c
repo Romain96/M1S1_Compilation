@@ -8,6 +8,10 @@
 #include "mips_generator.h"
 extern bool _mips_verbose;
 
+//========================================================================================
+// FONCTIONS D'ECRITURE DE LA TABLE DES SYMBOLES ET DE LA LISTE DE QUADS
+//========================================================================================
+
 // Fonction             : mips_setup
 // Argument(s)          : - filename : le nom du fichier dans lequel écrire le code MIPS
 //                        - symbol_table : la table des symboles complétée par l'anlyse lexicale/syntaxique

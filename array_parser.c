@@ -9,7 +9,12 @@
 #define AP_RIGHT_BRACE 2
 #define INTEGER_DIGIT_MAX_SIZE 42
 
-// vérifie qu'il y a autant de '{' que de '}' et que l'ordre est respecté
+// Fonction             : __array_parser_check_braces
+// Argument(s)          : - text : la chaine de caractères à parser
+// Valeur de retour     : vrai si la chaine est bien formée, faux sinon
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : vérifie qu'il y a autant de '{' que de '}' et que l'ordre est respecté
 bool __array_parser_check_braces(char *text)
 {
 	struct stack *s = stack_new();
@@ -45,7 +50,12 @@ bool __array_parser_check_braces(char *text)
 	}
 }
 
-// vérifie que les virgules sont toujours entre des nombres (ou entre '}' et '{')
+// Fonction             : __array_parser_check_commas
+// Argument(s)          : - text : la chaine de caractères à parser
+// Valeur de retour     : vrai si la chaine est bien formée, faux sinon
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : vérifie que les virgules sont toujours entre des nombres (ou entre '}' et '{')
 bool __array_parser_check_commas(char *text)
 {
 	// taille minimale requise est {nombre_de_un_chiffre} (3)
@@ -72,7 +82,12 @@ bool __array_parser_check_commas(char *text)
 	return true;
 }
 
-// compte le nombre d'entiers dans la chaine
+// Fonction             : __array_parser_count_values
+// Argument(s)          : - text : la chaine de caractères à parser
+// Valeur de retour     : le nombre de valeurs dans la chaine
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : compte le nombre d'entiers dans la chaine
 int __array_parser_count_values(char *text)
 {
 	int i = 0;
@@ -95,7 +110,12 @@ int __array_parser_count_values(char *text)
 	return number_of_values;
 }
 
-// compte le nombre de dimensions (profondeur maximale de {{{{... en partant de 0)
+// Fonction             : __array_parser_count_number_of_dimensions
+// Argument(s)          : - text : la chaine de caractères à parser
+// Valeur de retour     : le nombre de dimensions de la chaine
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : compte le nombre de dimensions (profondeur maximale de {{{{... en partant de 0)
 int __array_parser_count_number_of_dimensions(char *text)
 {
 	size_t i = 0;
@@ -112,7 +132,14 @@ int __array_parser_count_number_of_dimensions(char *text)
 	return number_of_dimensions;
 }
 
-// compte le nombre de valeurs d'une dimension (représentée comme une profondeur d'accolade)
+// Fonction             : __array_parser_depth_block_count
+// Argument(s)          : - text : la chaine de caractères à parser
+//			  - dim : la dimensions de départ
+//			  - dimsize : un tableau à remplir avec la taille des dimensions
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : compte le nombre de valeurs d'une dimension (représentée comme une profondeur d'accolade)
 void __array_parser_depth_block_count(char *text, int dim, int *dimsize)
 {
 	int comma_depth = 0;
@@ -142,7 +169,13 @@ void __array_parser_depth_block_count(char *text, int dim, int *dimsize)
 	}
 }
 
-// compte la taille de chaque dimension (ndim devrait être obtenu avec __array_parser_count_number_of_dimensions)
+// Fonction             : __array_parser_count_size_of_dimensions
+// Argument(s)          : - text : la chaine de caractères à parser
+//			  - ndim : le nombre de dimensions (devrait être obtenu avec __array_parse_count_number_of_dimensions)
+// Valeur de retour     : une tableau de taille ndim (alloué) contenant la taille de chaque dimension
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : compte la taille de chaque dimension
 int *__array_parser_count_size_of_dimensions(char *text, int ndim)
 {
 	// allocation de la m�moire pour les dimensions
@@ -163,7 +196,12 @@ int *__array_parser_count_size_of_dimensions(char *text, int ndim)
 	return dimsize;
 }
 
-// tente de parser toutes la valeurs dans la structure int_array
+// Fonction             : array_parser_parse_text
+// Argument(s)          : - text : la chaine de caractères à parser
+// Valeur de retour     : un pointeur sur une structure stenc_array remplit avec les infos issues du parsing
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : tente de parser toutes la valeurs dans la structure stenc_array
 struct stenc_array *array_parser_parse_text(char *text)
 {
 	// vérification des accolades
@@ -238,7 +276,12 @@ struct stenc_array *array_parser_parse_text(char *text)
 // GESTION DES REFERENCES //
 ////////////////////////////
 
-// retourne l'identificateur de tableau
+// Fonction             : __array_parser_extract_reference_identifier
+// Argument(s)          : - text : la chaine de caractères à parser
+// Valeur de retour     : une chaine de caractères contenant l'identificateur du tableau/de le référence
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : retourne l'identificateur de tableau
 char *__array_parser_extract_reference_identifier(char *text)
 {
 	int i = 0;
@@ -269,7 +312,12 @@ char *__array_parser_extract_reference_identifier(char *text)
 	return NULL;
 }
 
-// compte le nombre de dimensions de la référence (nombre de [])
+// Fonction             : __array_parser_count_reference_dimensions
+// Argument(s)          : - text : la chaine de caractères à parser
+// Valeur de retour     : le nombre de références (d'indices) de la chaine
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : compte le nombre de dimensions de la référence (nombre de [])
 int __array_parser_count_reference_dimensions(char *text)
 {
 	int i = 0;
@@ -299,7 +347,13 @@ int __array_parser_count_reference_dimensions(char *text)
 	}
 }
 
-// remplit l'index de chaque dimension (ndim devrait être obtenu avec __array_parser_count_reference_dimensions)
+// Fonction             : __array_parser_count_index_of_dimensions
+// Argument(s)          : - text : la chaine de caractères à parser
+//			  - ndim : la nombre de dimensions de l'array (decrait être obtenu avec __array_parser_count_reference_dimensions)
+// Valeur de retour     : un tableau de taille ndim (alloué) contenant l'indice pour chaque dimension
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : remplit l'index de chaque dimension
 int *__array_parser_count_index_of_dimensions(char *text, int ndim)
 {
 	// allocation de la mémoire pour le tableau des indices
@@ -345,7 +399,12 @@ int *__array_parser_count_index_of_dimensions(char *text, int ndim)
 	return index_array;
 }
 
-// parse toute la référence dans une structure int_array_reference
+// Fonction             : array_parser_parse_reference
+// Argument(s)          : - text : la chaine de caractères à parser
+// Valeur de retour     : un pointeur sur une structure stenc_array remplit avec les infos issues du parsing de la chaine
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : parse toute la référence dans une structure stenc_array
 struct stenc_array *array_parser_parse_reference(char *text)
 {
 	// extraction du nom
@@ -375,7 +434,12 @@ struct stenc_array *array_parser_parse_reference(char *text)
 	return arr;
 }
 
-// libère la mémoire allouée par la structure
+// Fonction             : array_parser_free
+// Argument(s)          : - arr : un pointeur sur la structure stenc_array à libérer
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : libère la mémoire allouée par la structure
 void array_parser_free(struct stenc_array *arr)
 {
 	if (arr->identifier != NULL)
@@ -389,7 +453,12 @@ void array_parser_free(struct stenc_array *arr)
 	free(arr);
 }
 
-// DEBUG : affiche le contenu de la structure int_array
+// Fonction             : array_parser_print
+// Argument(s)          : - arr : un pointeur sur une structure stenc_array à afficher
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : affiche les champs de la structure stenc_array
 void array_parser_print(struct stenc_array *arr)
 {
 	printf("STENC_STRUCT\n");
