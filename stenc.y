@@ -640,8 +640,7 @@ declaration_or_assignment:
                 // récupération du symbole contenant le nom du tableau
                 struct symbol *arr = symbol_lookup(symbol_table, $3->identifier);
                 // maintenant l'id est affecté (qu'il l'est été ou non)
-                id->is_set = true;
-                // vérification de la validité des indices
+                id->is_set = true;                // vérification de la validité des indices
                 for (int i = 0; i < arr->int_array_value->number_of_dimensions; i++)
                 {
                         // chaque indice doit être inférieur à la taile de la dimension correspondante
@@ -654,14 +653,21 @@ declaration_or_assignment:
                 }
 
                 // calcul de l'adresse de l'élément à accéder
+                array_parser_print($3);
+                array_parser_print(arr->int_array_value);
                 int address = 0;
-                int i = 0;
+                int i;
                 for (i = 0; i < arr->int_array_value->number_of_dimensions - 1; i++)
                 {
-                        address += arr->int_array_value->size_of_dimensions[i] * $3->index_of_dimensions[i];
+                        printf ("i %d\n", i);
+                        address += $3->index_of_dimensions[i] * arr->int_array_value->size_of_dimensions[i + 1];
+                        printf("index %d, size %d\n", $3->index_of_dimensions[i], arr->int_array_value->size_of_dimensions[i + 1]);
+                        printf("address loop %d\n", address);
                 }
                 address += $3->index_of_dimensions[i];
+                printf("address before MIPS_REGISTER %d\n", address);
                 address = address * MIPS_REGISTER_SIZE_IN_BYTES;
+                printf("and after %d\n", address);
                 // ajout d'un nouveau symbole contenant l'adresse
                 struct symbol *addr = symbol_new_temp(&symbol_table);
                 addr->int_value = address;
