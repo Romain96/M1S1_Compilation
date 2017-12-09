@@ -38,7 +38,7 @@
         struct stenc_array *array;
         struct stenc_array *array_reference;
         enum relop_enum {EQ, NE, GT, LT, GE, LE} relop_code;
-        enum for_iterator_enum {INCR, DECR} for_iterator_code;
+        enum for_iterator_enum {INCR_BEFORE, INCR_AFTER, DECR_BEFORE, DECR_AFTER} for_iterator_code;
         struct codegen {
                 struct symbol *result;
                 struct list *code;
@@ -287,38 +287,106 @@ control_struct:
                 if (_verbose_output)
                         printf("control_struct -> FOR (for_init; condition; for_iterator)\n");
 
-                // on complète la truelist de condition par le premier quad du bloc d'instructions
-                quad_label($9.code->current_quad);
-                list_complete($5.truelist, $9.code->current_quad->label_name);
-
-                // la nextlist est la falselist de condition
-                $$.nextlist = $5.falselist;
-
-                // on génère l'incrémentation/décrémentation
-                struct quad *iterator;
                 struct symbol *incr = symbol_new_temp(&symbol_table);
                 struct symbol *res = symbol_new_temp(&symbol_table);
                 incr->int_value = 1;
+
+                struct quad *goto_cond = NULL;
+                struct quad *iterator = NULL;
+                struct quad *goto_block = NULL;
+
+                // les actions dépendent de l'itérateur (++/--i ou i++/--)
                 switch ($7)
                 {
-                        case INCR:	                
-	                        
-		                iterator = quad_gen(&quad_list, QUAD_PLUS, $3.result, incr, res, false, NULL);
+                        case INCR_BEFORE:
+                                // on marque les quads conditione et bloc d'instructions
+                                quad_label($5.code->current_quad);
+                                quad_label($9.code->current_quad);
+
+                                // on génère un goto inconditionnel vers la condition
+                                goto_cond = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $5.code->current_quad->label_name);
+
+                                // on génère l'incrémentation
+                                iterator = quad_gen(&quad_list, QUAD_PLUS, $3.result, incr, res, false, NULL);
+                                
+                                // on génère un goto inconditionnel vers le premier quad du bloc d'instructions
+                                goto_block = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $9.code->current_quad->label_name);
+
+                                // on marque le quad de l'incrémentation
+                                quad_label(iterator);
+
+                                // on complète la truelist de condition par le quad de l'incrémentation
+                                list_complete($5.truelist, iterator->label_name);
+                                $$.code = list_concat($3.code, list_concat($5.code, list_concat($9.code, 
+                                list_concat(list_new(goto_cond), list_concat(list_new(iterator), list_new(goto_block))))));
                                 break;
-                        case DECR:
-                                iterator = quad_gen(&quad_list, QUAD_MINUS, $3.result, incr, res, false, NULL);
+                        case INCR_AFTER:	                                        
+                                // on génère le quad de l'incrémentation
+        	                iterator = quad_gen(&quad_list, QUAD_PLUS, $3.result, incr, res, false, NULL);
+
+                                // on marque le premier quad du bloc d'instructions
+                                quad_label($9.code->current_quad);
+
+                                // on complète la truelist de la condition par le premier quad du bloc d'instructions
+                                list_complete($5.truelist, $9.code->current_quad->label_name);
+
+                                // on marque le quad de la condition
+                                quad_label($5.code->current_quad); 
+
+                                // on génère un goto vers la condition
+                                goto_cond = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $5.code->current_quad->label_name);
+
+                                $$.code = list_concat($3.code, list_concat($5.code, list_concat($9.code, list_concat(list_new(iterator), list_new(goto_cond)))));
+                                break;
+                        case DECR_BEFORE:
+                                // on marque les quads conditione et bloc d'instructions
+                                quad_label($5.code->current_quad);
+                                quad_label($9.code->current_quad);
+
+                                // on génère un goto inconditionnel vers la condition
+                                goto_cond = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $5.code->current_quad->label_name);
+
+                                // on génère la décrémentation
+                                iterator = quad_gen(&quad_list, QUAD_PLUS, $3.result, incr, res, false, NULL);
+                                
+                                // on génère un goto inconditionnel vers le premier quad du bloc d'instructions
+                                goto_block = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $9.code->current_quad->label_name);
+
+                                // on marque le quad de la décrémentation
+                                quad_label(iterator);
+
+                                // on complète la truelist de condition par le quad de la décrémentation
+                                list_complete($5.truelist, iterator->label_name);
+                                $$.code = list_concat($3.code, list_concat($5.code, list_concat($9.code, 
+                                list_concat(list_new(goto_cond), list_concat(list_new(iterator), list_new(goto_block))))));
+                                break;
+                        case DECR_AFTER:
+                                // on génère la décrémentation
+        	                iterator = quad_gen(&quad_list, QUAD_MINUS, $3.result, incr, res, false, NULL);
+
+                                // on marque le premier quad du bloc d'instructions
+                                quad_label($9.code->current_quad);
+
+                                // on complère la truelist de la condition par le premier quad du bloc d'instructions
+                                list_complete($5.truelist, $9.code->current_quad->label_name);
+
+                                // on marque le quad de la condition
+                                quad_label($5.code->current_quad); 
+
+                                // on génère un goto vers la condition
+                                goto_cond = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $5.code->current_quad->label_name);
+                                
+                                $$.code = list_concat($3.code, list_concat($5.code, list_concat($9.code, list_concat(list_new(iterator), list_new(goto_cond)))));
                                 break;
                         default:
-                                fprintf(stderr, "ni incr ni decr ?\n");
+                                fprintf(stderr, "for iterator is not i++, i--, ++i or --i\n");
                                 exit(1);
                 }
 
-                // et le goto inconditionnel vers la condition
-                quad_label($5.code->current_quad);
-                struct quad *new_quad = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $5.code->current_quad->label_name);
+                // la nextlist est la falselist de condition
+                $$.nextlist = $5.falselist;    
                 
                 // le code est le tout
-                $$.code = list_concat($3.code, list_concat($5.code, list_concat($9.code, list_concat(list_new(iterator), list_new(new_quad)))));
                 $$.result = NULL;
                 $$.truelist = NULL;
                 $$.falselist = NULL;
@@ -373,14 +441,26 @@ for_iterator:
         IDENTIFIER INCREASE
         {
                 if (_verbose_output)
-                        printf("for_iterator -> IDENTIFIER INCREASE\n");
-                $$ = INCR;
+                        printf("for_iterator -> IDENTIFIER INCREASE (low priority)\n");
+                $$ = INCR_AFTER;
         }
         | IDENTIFIER DECREASE
         {
                 if (_verbose_output)
-                        printf("for_iterator -> IDENTIFIER DECREASE\n");
-                $$ = DECR;
+                        printf("for_iterator -> IDENTIFIER DECREASE (low priority)\n");
+                $$ = DECR_AFTER;
+        }
+        | INCREASE IDENTIFIER
+        {
+                if (_verbose_output)
+                        printf("for_iterator -> INCREASE IDENTIFIER (high priority)\n");
+                $$ = INCR_BEFORE;
+        }
+        | DECREASE IDENTIFIER
+        {
+                if (_verbose_output)
+                        printf("for_iterator -> DECREASE IDENTIFIER (high priority)\n");
+                $$ = DECR_BEFORE;
         }
         ;
 
