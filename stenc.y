@@ -2,6 +2,8 @@
         #include <stdio.h>
         #include <stdlib.h>
         #include <stdbool.h>
+        #include <ctype.h>
+        #include <unistd.h>
         #include "symbol_table.h"
         #include "quad.h"
         #include "list.h"
@@ -14,7 +16,15 @@
 
         // la table des symboles
         struct symbol *symbol_table = NULL;
+        // liste de quads (le code généré)
         struct quad *quad_list = NULL;
+
+        // vraiables globales liées aux options du programme
+        bool _verbose_output = false;   // affiche les règles de la grammaire à chaque action
+        bool _print_symbol_table = false;
+        bool _print_quad_list = false;
+        char * _input_c_file = NULL;
+        char * _output_s_file = NULL;
 %}
 
 %error-verbose
@@ -81,15 +91,14 @@
 program:
         main_func
         {
-                printf("program -> main_func\n");
+                if (_verbose_output)
+                        printf("program -> main_func\n");
                 $$.result = $1.result;
                 $$.code = $1.code;
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
                 $$.array_value = NULL;
-                printf("Match !!!\n");
-		printf("Main returns with value %d\n", $1.result->int_value);
                 return 0;
         }
         ;
@@ -97,7 +106,8 @@ program:
 main_func:
 	TYPE_INT MAIN LEFT_BRACE statement_list RETURN statement RIGHT_BRACE
 	{
-		printf("main_func -> TYPE_INT { statement_list RETURN INTEGER ; }\n");
+                if (_verbose_output)
+		        printf("main_func -> TYPE_INT { statement_list RETURN INTEGER ; }\n");
 		$$.result = $6.result;
 		$$.code = list_concat($4.code, $6.code);
 		$$.truelist = NULL;
@@ -107,7 +117,8 @@ main_func:
 	}
 	| TYPE_INT MAIN LEFT_BRACE RETURN statement RIGHT_BRACE
 	{
-		printf("main_func -> TYPE_INT { RETURN INTEGER ; }\n");
+                if (_verbose_output)
+		        printf("main_func -> TYPE_INT { RETURN INTEGER ; }\n");
 		$$.result = $5.result;
 		$$.code = $5.code;
 		$$.truelist = NULL;
@@ -120,7 +131,8 @@ main_func:
 statement_list:
         statement_list statement
         {
-                printf("statement_list -> statement_list statement\n");
+                if (_verbose_output)
+                        printf("statement_list -> statement_list statement\n");
                 $$.result = $1.result;
                 $$.code = list_concat($1.code, $2.code);
                 $$.truelist = NULL;
@@ -136,7 +148,8 @@ statement_list:
         }
         | statement
         {
-                printf("statement_list -> statement\n");
+                if (_verbose_output)
+                        printf("statement_list -> statement\n");
                 $$.result = $1.result;
                 $$.code = $1.code;
                 $$.truelist = $1.truelist;
@@ -150,7 +163,8 @@ statement_list:
 statement:
         expression SEMICOLON
 	{
-		printf("statement -> expression SEMICOLON\n");
+                if (_verbose_output)
+		        printf("statement -> expression SEMICOLON\n");
 		$$.code = $1.code;
 		$$.result = $1.result;
                 $$.truelist = $1.truelist;
@@ -160,7 +174,8 @@ statement:
 	}
         | control_struct
         {
-                printf("statement -> control_struct\n");
+                if (_verbose_output)
+                        printf("statement -> control_struct\n");
                 $$.code = $1.code;
 		$$.result = NULL;
                 $$.truelist = $1.truelist;
@@ -173,7 +188,8 @@ statement:
 control_struct:
         IF LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET instruction_block
         {
-                printf("control_struct -> IF (condition)\n");
+                if (_verbose_output)
+                        printf("control_struct -> IF (condition)\n");               
                 // on complète la truelist de condition avec le premier quad du bloc d'instructions
                 quad_label($5.code->current_quad);
                 list_complete($3.truelist, $5.code->current_quad->label_name);
@@ -192,7 +208,8 @@ control_struct:
         }
         | IF LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET instruction_block ELSE if_else_goto instruction_block
         {
-                printf("control_struct -> IF (condition) else\n");
+                if (_verbose_output)
+                        printf("control_struct -> IF (condition) else\n");
                 // on complète la truelist de condition avec le premier quad du premier bloc d'instructions
                 quad_label($5.code->current_quad);
                 list_complete($3.truelist, $5.code->current_quad->label_name);
@@ -216,7 +233,8 @@ control_struct:
         }
         | WHILE LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET instruction_block
         {
-                printf("control_struct -> WHILE (condition)\n");
+                if (_verbose_output)
+                        printf("control_struct -> WHILE (condition)\n");
                 // on complète la truelist de condition par le premier quad du bloc d'instruction
                 quad_label($5.code->current_quad);
                 list_complete($3.truelist, $5.code->current_quad->label_name);
@@ -236,7 +254,8 @@ control_struct:
         }
         | FOR LEFT_ROUND_BRACKET for_init SEMICOLON condition SEMICOLON for_iterator RIGHT_ROUND_BRACKET instruction_block
         {
-                printf("control_struct -> FOR (for_init; condition; for_iterator)\n");
+                if (_verbose_output)
+                        printf("control_struct -> FOR (for_init; condition; for_iterator)\n");
                 // on complète la truelist de condition par le premier quad du bloc d'instructions
                 quad_label($9.code->current_quad);
                 list_complete($5.truelist, $9.code->current_quad->label_name);
@@ -274,6 +293,8 @@ control_struct:
 
 if_else_goto:
         {
+                if (_verbose_output)
+                        printf("if_else_goto -> epsilon");
                 // on génère le code d'un goto incomplet entre le if et le else
                 $$.result = NULL;
                 $$.truelist = NULL;
@@ -288,7 +309,8 @@ if_else_goto:
 for_init:
         IDENTIFIER ASSIGNMENT expression
 	{
-		printf("for_init -> IDENTIFIER ASSIGNMENT expression\n");
+                if (_verbose_output)
+		        printf("for_init -> IDENTIFIER ASSIGNMENT expression\n");
 		struct symbol *id = symbol_lookup(symbol_table, $1);
                 // l'id doit être déclaré
                 if (!id->is_declared)
@@ -322,7 +344,8 @@ for_iterator:
 instruction_block:
         LEFT_BRACE statement_list RIGHT_BRACE
         {
-                printf("instruction_block -> { statement_list }\n");
+                if (_verbose_output)
+                        printf("instruction_block -> { statement_list }\n");
                 $$.result = $2.result;
                 $$.truelist = $2.truelist;
                 $$.falselist = $2.falselist;
@@ -335,7 +358,8 @@ instruction_block:
 expression:
         IDENTIFIER INCREASE
 	{
-		printf("expression -> IDENTIFIER INCREASE (low priority)\n");
+                if (_verbose_output)
+		        printf("expression -> IDENTIFIER INCREASE (low priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $1);
                 // l'id doit être déclaré et initialisé
                 if (!id->is_declared)
@@ -362,7 +386,8 @@ expression:
 	}
 	| IDENTIFIER DECREASE
 	{
-		printf("expression -> IDENTIFIER DECREASE (low priority)\n");
+                if (_verbose_output)
+		        printf("expression -> IDENTIFIER DECREASE (low priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $1);
                 // l'id doit être déclaré et initialisé
                 if (!id->is_declared)
@@ -389,7 +414,8 @@ expression:
 	}
         | expression PLUS expression
         {
-                printf("expression -> expression + expression\n");
+                if (_verbose_output)
+                        printf("expression -> expression + expression\n");
                 struct symbol *res = symbol_new_temp(&symbol_table);
                 struct quad *new = quad_gen(&quad_list, QUAD_PLUS, $1.result, $3.result, res, false, NULL);
                 $$.result = res;
@@ -401,7 +427,8 @@ expression:
         }
         | expression MINUS expression
         {
-                printf("expression -> expression - expression\n");
+                if (_verbose_output)
+                        printf("expression -> expression - expression\n");
                 struct symbol *res = symbol_new_temp(&symbol_table);
                 struct quad *new = quad_gen(&quad_list, QUAD_MINUS, $1.result, $3.result, res, false, NULL);
                 $$.result = res;
@@ -413,7 +440,8 @@ expression:
         }
         | expression MULTIPLY expression
         {
-                printf("expression -> expression * expression\n");
+                if (_verbose_output)
+                        printf("expression -> expression * expression\n");
                 struct symbol *res = symbol_new_temp(&symbol_table);
                 struct quad *new = quad_gen(&quad_list, QUAD_MULTIPLY, $1.result, $3.result, res, false, NULL);
                 $$.result = res;
@@ -425,7 +453,8 @@ expression:
         }
         | expression DIVIDE expression
         {
-                printf("expression -> expression / expression\n");
+                if (_verbose_output)
+                        printf("expression -> expression / expression\n");
                 struct symbol *res = symbol_new_temp(&symbol_table);
                 struct quad *new = quad_gen(&quad_list, QUAD_DIVIDE, $1.result, $3.result, res, false, NULL);
                 $$.result = res;
@@ -437,7 +466,8 @@ expression:
         }
         | '(' expression ')'
         {
-                printf("expression -> ( expression )\n");
+                if (_verbose_output)
+                        printf("expression -> ( expression )\n");
                 $$.result = $2.result;
                 $$.code = $2.code;
                 $$.truelist = NULL;
@@ -447,7 +477,8 @@ expression:
         }
         | declaration_or_assignment
         {
-                printf("expression -> declaration_or_assignment\n");
+                if (_verbose_output)
+                        printf("expression -> declaration_or_assignment\n");
                 $$.result = $1.result;
                 $$.code = $1.code;
                 $$.truelist = NULL;
@@ -457,7 +488,8 @@ expression:
         }
 	| INCREASE IDENTIFIER
 	{
-		printf("expression -> INCREASE IDENTIFIER (high priority)\n");
+                if (_verbose_output)
+		        printf("expression -> INCREASE IDENTIFIER (high priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $2);
                 // l'id doit être déclaré et initialisé
                 if (!id->is_declared)
@@ -484,7 +516,8 @@ expression:
 	}
 	| DECREASE IDENTIFIER
 	{
-		printf("expression -> DECREASE IDENTIFIER (high priority)\n");
+                if (_verbose_output)
+		        printf("expression -> DECREASE IDENTIFIER (high priority)\n");
 		struct symbol *id = symbol_lookup(symbol_table, $2);
                 // l'id doit être déclaré et initialisé
                 if (!id->is_declared)
@@ -511,7 +544,8 @@ expression:
 	}
         | INTEGER
         {
-                printf("expression -> INTEGER\n");
+                if (_verbose_output)
+                        printf("expression -> INTEGER\n");
                 struct symbol *new = symbol_new_temp(&symbol_table);
                 new->is_constant = true;
                 new->int_value = $1;
@@ -524,7 +558,8 @@ expression:
         }
         | INT_ARRAY
         {
-                printf("expression -> INT_ARRAY\n");
+                if (_verbose_output)
+                        printf("expression -> INT_ARRAY\n");
                 $$.result = NULL;
                 $$.code = NULL;
                 $$.truelist = NULL;
@@ -534,7 +569,8 @@ expression:
         }
         | IDENTIFIER
         {
-                printf("expression -> IDENTIFIER\n");
+                if (_verbose_output)
+                        printf("expression -> IDENTIFIER\n");
                 struct symbol *id = symbol_lookup(symbol_table, $1);
                 $$.result = id;
                 $$.code = NULL;
@@ -549,7 +585,8 @@ expression:
 declaration_or_assignment: 
         TYPE_INT IDENTIFIER
         {
-                printf("declaration_or_assignment -> TYPE_INT IDENTIFIER\n");
+                if (_verbose_output)
+                        printf("declaration_or_assignment -> TYPE_INT IDENTIFIER\n");
 		struct symbol *id = symbol_lookup(symbol_table, $2);
                 // maintenant l'id est déclaré mais non initialisé
                 id->is_declared = true;
@@ -561,7 +598,8 @@ declaration_or_assignment:
         }
 	| IDENTIFIER ASSIGNMENT expression
 	{
-		printf("declaration_or_assignment -> IDENTIFIER ASSIGNMENT expression\n");
+                if (_verbose_output)
+		        printf("declaration_or_assignment -> IDENTIFIER ASSIGNMENT expression\n");
 		struct symbol *id = symbol_lookup(symbol_table, $1);
                 // l'id doit avoir été déclaré précédemment
                 if (!id->is_declared)
@@ -580,7 +618,8 @@ declaration_or_assignment:
 	}
         | IDENTIFIER ASSIGNMENT INT_ARRAY_REFERENCE
         {
-                printf("declaration_or_assignment -> IDENTIFIER ASSIGNMENT INT_ARRAY_REFERENCE\n");
+                if (_verbose_output)
+                        printf("declaration_or_assignment -> IDENTIFIER ASSIGNMENT INT_ARRAY_REFERENCE\n");
                 // récupération du symbole de la variable à affecter
                 struct symbol *id = symbol_lookup(symbol_table, $1);
                 // la variable doit être de type int (pas int_array ou string_litteral)
@@ -622,8 +661,7 @@ declaration_or_assignment:
                 }
                 address += $3->index_of_dimensions[i];
                 address = address * MIPS_REGISTER_SIZE_IN_BYTES;
-                printf("adress to access is %d\n", address);
-                // ajout d'un nouveau symbole contenant
+                // ajout d'un nouveau symbole contenant l'adresse
                 struct symbol *addr = symbol_new_temp(&symbol_table);
                 addr->int_value = address;
                 // génération du quad (QUAD_ARRAY_READ)
@@ -637,7 +675,8 @@ declaration_or_assignment:
         }
         | INT_ARRAY_REFERENCE ASSIGNMENT IDENTIFIER
         {
-                printf("declaration_or_assignment -> INT_ARRAY_REFERENCE ASSIGNMENT IDENTIFIER\n");
+                if (_verbose_output)
+                        printf("declaration_or_assignment -> INT_ARRAY_REFERENCE ASSIGNMENT IDENTIFIER\n");
                 // récupération du symbole de la variable à affecter
                 struct symbol *id = symbol_lookup(symbol_table, $3);
                 // la variable doit être de type int (pas int_array ou string_litteral)
@@ -679,7 +718,6 @@ declaration_or_assignment:
                 }
                 address += $1->index_of_dimensions[i];
                 address = address * MIPS_REGISTER_SIZE_IN_BYTES;
-                printf("adress to access is %d\n", address);
                 // ajout d'un nouveau symbole contenant l'addresse
                 struct symbol *addr = symbol_new_temp(&symbol_table);
                 addr->int_value = address;
@@ -694,7 +732,8 @@ declaration_or_assignment:
         }
         | INT_ARRAY_REFERENCE ASSIGNMENT INTEGER
         {
-                printf("declaration_or_assignment -> INT_ARRAY_REFERENCE ASSIGNMENT INTEGER\n");
+                if (_verbose_output)
+                        printf("declaration_or_assignment -> INT_ARRAY_REFERENCE ASSIGNMENT INTEGER\n");
                 // création d'un nouveau temporaire contenant la valeur à affecter
                 struct symbol *id = symbol_new_temp(&symbol_table);
                 id->int_value = $3;
@@ -723,7 +762,6 @@ declaration_or_assignment:
                 }
                 address += $1->index_of_dimensions[i];
                 address = address * MIPS_REGISTER_SIZE_IN_BYTES;
-                printf("adress to access is %d\n", address);
                 // ajout d'un nouveau symbole contenant l'addresse
                 struct symbol *addr = symbol_new_temp(&symbol_table);
                 addr->int_value = address;
@@ -738,7 +776,8 @@ declaration_or_assignment:
         }
         | TYPE_INT IDENTIFIER ASSIGNMENT expression
         {
-                printf("declaration_or_assignment -> TYPE_INT IDENTIFIER ASSIGNMENT expression\n");
+                if (_verbose_output)
+                        printf("declaration_or_assignment -> TYPE_INT IDENTIFIER ASSIGNMENT expression\n");
                 // la variable expression doit être un entier (pas de chaines de caractères ou de tableaux/références)
                 if ($4.result == NULL || $4.array_value)
                 {
@@ -769,7 +808,8 @@ declaration_or_assignment:
         }
         | TYPE_INT IDENTIFIER LEFT_BRACKET RIGHT_BRACKET ASSIGNMENT INT_ARRAY
         {
-                printf("declaration_or_assignment -> TYPE_INT IDENTIFIER LEFT_BRACKET RIGHT_BRACKET ASSIGNMENT INT_ARRAY\n");
+                if (_verbose_output)
+                        printf("declaration_or_assignment -> TYPE_INT IDENTIFIER LEFT_BRACKET RIGHT_BRACKET ASSIGNMENT INT_ARRAY\n");
 		struct symbol *id = symbol_lookup(symbol_table, $2);
                 // maintenant l'id est déclaré et initialisé
                 id->is_declared = true;
@@ -808,7 +848,8 @@ declaration_or_assignment:
 condition:
         condition BOOL_OR condition
         {
-                printf("condition -> condition BOOL_OR condition\n");
+                if (_verbose_output)
+                        printf("condition -> condition BOOL_OR condition\n");
                 // on complète la falselist de expression1 par le premier quad de expression2
                 list_complete($1.falselist, $3.code->current_quad->label_name);
                 // la falselist est la falselist de expression2
@@ -823,8 +864,8 @@ condition:
         }
         | condition BOOL_AND condition
         {
-                printf("condition -> condition BOOL_OR condition\n");
-                printf("test %d\n", $3.code->current_quad->id);
+                if (_verbose_output)
+                        printf("condition -> condition BOOL_OR condition\n");
                 // on complète la truelist de expression1 par le numéro du premier quad de expression2
                 list_complete($1.truelist, $3.code->current_quad->label_name);
                 // la falselist est la concaténation des falselist de expression1 et expression2
@@ -839,7 +880,8 @@ condition:
         }
         | BOOL_NOT condition
         {
-                printf("condition -> BOOL_NOT condition\n");
+                if (_verbose_output)
+                        printf("condition -> BOOL_NOT condition\n");
                 // on inverse simplement les truelist et falselist (code et result inchangés)
                 $$.result = $2.result;
                 $$.code = $2.code;
@@ -850,7 +892,8 @@ condition:
         }
         | LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET
         {
-                printf("condition -> LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET\n");
+                if (_verbose_output)
+                        printf("condition -> LEFT_ROUND_BRACKET condition RIGHT_ROUND_BRACKET\n");
                 // rien de spécial on transmet juste les listes
                 $$.result = $2.result;
                 $$.code = $2.code;
@@ -860,7 +903,8 @@ condition:
         }
         | IDENTIFIER
         {
-                printf("condition -> IDENTIFIER\n");
+                if (_verbose_output)
+                        printf("condition -> IDENTIFIER\n");
                 // recherche du symbole dans la table
                 struct symbol *id = symbol_lookup(symbol_table, $1);
                 // génération du goto conditionnel : if ID goto ?
@@ -879,7 +923,8 @@ condition:
         }
         | IDENTIFIER relop IDENTIFIER
         {
-                printf("condition -> IDENTIFIER relop IDENTIFIER\n");
+                if (_verbose_output)
+                        printf("condition -> IDENTIFIER relop IDENTIFIER\n");
                 // recherche des deux symboles dans la table
                 struct symbol *id1 = symbol_lookup(symbol_table, $1);
                 struct symbol *id2 = symbol_lookup(symbol_table, $3);
@@ -950,32 +995,38 @@ condition:
 relop:
         BOOL_EQ
         {
-                printf("relop -> BOOL_EQ\n");
+                if (_verbose_output)
+                        printf("relop -> BOOL_EQ\n");
                 $$ = EQ;
         }
         | BOOL_NE
         {
-                printf("relop ->  BOOL_NE\n");
+                if (_verbose_output)
+                        printf("relop ->  BOOL_NE\n");
                 $$ = NE;
         }
         | BOOL_GT
         {
-                printf("relop -> BOOL_GT\n");
+                if (_verbose_output)
+                        printf("relop -> BOOL_GT\n");
                 $$ = GT;
         }
         | BOOL_LT
         {
-                printf("relop -> BOOL_LT\n");
+                if (_verbose_output)
+                        printf("relop -> BOOL_LT\n");
                 $$ = LT;
         }
         | BOOL_GE
         {
-                printf("relop -> BOOL_GE\n");
+                if (_verbose_output)
+                        printf("relop -> BOOL_GE\n");
                 $$ = GE;
         }
         | BOOL_LE
         {
-                printf("relop -> BOOL_LE\n");
+                if (_verbose_output)
+                        printf("relop -> BOOL_LE\n");
                 $$ = LE;
         }
         ;
@@ -983,7 +1034,8 @@ relop:
 print_function_call:
         PRINT_STRING LEFT_ROUND_BRACKET STRING RIGHT_ROUND_BRACKET
         {
-                printf("print_function_call -> PRINT_STRING LEFT_ROUND_BRACKET STRING RIGHT_ROUND_BRACKET\n");
+                if (_verbose_output)
+                        printf("print_function_call -> PRINT_STRING LEFT_ROUND_BRACKET STRING RIGHT_ROUND_BRACKET\n");
                 struct symbol *new = symbol_new_temp(&symbol_table);
 		new->string_value = $3;
 		new->is_string_litteral = true;
@@ -997,7 +1049,8 @@ print_function_call:
         }
         | PRINT_INTEGER LEFT_ROUND_BRACKET INTEGER RIGHT_ROUND_BRACKET
         {
-                printf("print_function_call -> PRINT_INTEGER LEFT_ROUND_BRACKET INTEGER RIGHT_ROUND_BRACKET\n");
+                if (_verbose_output)
+                        printf("print_function_call -> PRINT_INTEGER LEFT_ROUND_BRACKET INTEGER RIGHT_ROUND_BRACKET\n");
                 struct symbol *new = symbol_new_temp(&symbol_table);
                 new->int_value = $3;
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_PRINTI, new, NULL, NULL, false, NULL);
@@ -1010,7 +1063,8 @@ print_function_call:
         }
         | PRINT_INTEGER LEFT_ROUND_BRACKET IDENTIFIER RIGHT_ROUND_BRACKET
         {
-                printf("print_function_call -> PRINT_STRING LEFT_ROUND_BRACKET IDENTIFIER RIGHT_ROUND_BRACKET\n");
+                if (_verbose_output)
+                        printf("print_function_call -> PRINT_STRING LEFT_ROUND_BRACKET IDENTIFIER RIGHT_ROUND_BRACKET\n");
                 struct symbol *id = symbol_lookup(symbol_table, $3);
                 struct quad *new_quad = quad_gen(&quad_list, QUAD_PRINTI, id, NULL, NULL, false, NULL);
                 $$.result = NULL;
@@ -1026,24 +1080,62 @@ print_function_call:
 
 int main(int argc, char *argv[])
 {
-        if (argc != 2)
-        {
-                fprintf(stderr, "usage : %s filename.c\n", argv[0]);
-                exit(1);
-        }
+        int c;
+        opterr = 0;
+
+        while ((c = getopt (argc, argv, "vsqi:o:")) != -1)
+                switch (c)
+                {
+                        case 'v':
+                                _verbose_output = true;
+                                break;
+                        case 's':
+                                _print_symbol_table = true;
+                                break;
+                        case 'q':
+                                _print_quad_list = true;
+                                break;
+                        case 'i':
+                                _input_c_file = optarg;
+                                break;
+                        case 'o':
+                                _output_s_file = optarg;
+                                break;
+                        case '?':
+                                if (optopt == 'c')
+                                        fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+                                else if (isprint (optopt))
+                                        fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+                                else
+                                        fprintf (stderr,"Unknown option character `\\x%x'.\n",optopt);
+                                fprintf(stderr, "usage : %s [-v][-s][-q] -i input_c_file -o output_s_file\n", argv[0]);
+                                fprintf(stderr, "-v option prints each grammar rule processed\n");
+                                fprintf(stderr, "-s option prints the symbol table at the end of parsing\n");
+                                fprintf(stderr, "-q option prints the quad list at the end of parsing\n");
+                                fprintf(stderr, "-i file.c indicates in which file the compiler reads the C code\n");
+                                fprintf(stderr, "-o file.s indicates in which file the compiler writes the MIPS assembly code\n");
+                                return 1;
+                        default:
+                                abort ();
+                }
 
         // ouverture du fichier
-        FILE *input = fopen(argv[1], "r");
+        FILE *input = fopen(_input_c_file, "r");
         yyin = input;
 
         yyparse();
-        symbol_print(symbol_table);
-        quad_print(quad_list);
+
+        // affichage de la table des symboles (option -s)
+        if (_print_symbol_table)
+                symbol_print(symbol_table);
+        // affichage de la liste de quads (option -q)
+        if (_print_quad_list)
+                quad_print(quad_list);
 
         fclose(input);
 
-        // !! experimental !!
-        struct mips_generator *mips = mips_setup("output.s", symbol_table, quad_list);
+        // écriture du code MIPS dans le fichier _output_s_file (option -o)
+        struct mips_generator *mips = mips_setup(_output_s_file, symbol_table, quad_list);
         mips_generate_assembly_code(mips);
 
         return 0;

@@ -357,11 +357,6 @@ struct stenc_array *array_parser_parse_reference(char *text)
 	// remplissage de l'index de chaque dimension
 	int *index_array = __array_parser_count_index_of_dimensions(text, ndim);
 
-	// DEBUG
-	printf("array_reference_ndim is %d\n", ndim);
-	for (int i = 0; i < ndim; i++)
-		printf("array_reference_indexofdim[%d] is %d\n", i, index_array[i]);
-
 	// allocation de la structure
 	struct stenc_array *arr = malloc(sizeof(struct stenc_array));
 	if (arr == NULL)

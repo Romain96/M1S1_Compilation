@@ -137,7 +137,7 @@ void __mips_write_symbol_table(struct mips_generator *mips)
 		}
                 iterator = iterator->next;
         }
-        printf("Symbol table written successfully :)\n");
+        printf("Symbol table written successfully\n");
 }
 
 // Fonction             : __mips_write_quad_list
@@ -212,8 +212,8 @@ void __mips_write_quad_list(struct mips_generator *mips)
                                         __mips_generate_array_write(mips, iterator);
                                         break;
                                 default:
-                                        printf("cas normalement impossible !\n");
-                                        break;
+                                        fprintf(stderr, "[MIPS_GENERATOR::__mips_write_quad_list] ERROR quad type is unknown\n");
+                                        return 1;
                         }
                 }
                 // quad suivant
@@ -224,7 +224,7 @@ void __mips_write_quad_list(struct mips_generator *mips)
         char prgramm_end[] = "label_end: li $v0, 10\nsyscall\n";
         fwrite(&prgramm_end, sizeof(char), strlen(prgramm_end), mips->output_file);
 
-        printf("quad list written successfully :)\n");
+        printf("quad list written successfully\n");
 }
 
 //===============================================================================
