@@ -1165,6 +1165,18 @@ declaration_or_assignment:
                 struct symbol *lval = symbol_lookup(symbol_table, $1->identifier);
                 struct symbol *rval = symbol_lookup(symbol_table, $3->identifier);
 
+                // lval et rval doivent être déclarés
+                if (!lval->is_declared)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", lval->identifier);
+                        exit(1);
+                }
+                if (!rval->is_declared)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", rval->identifier);
+                        exit(1);
+                }
+
                 // vérification des dimensions de lval (lval.ndim = id(lval)->ndim)
                 if ($1->number_of_dimensions != lval->int_array_value->number_of_dimensions)
                 {
@@ -1378,12 +1390,26 @@ declaration_or_assignment:
                 // récupération du symbole contenant le nom du tableau
                 struct symbol *arr = symbol_lookup(symbol_table, $1->identifier);
 
+                // arr doit avoir été déclaré
+                if (!arr->is_declared)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", arr->identifier);
+                        exit(1);
+                }
+
                 // maintenant le tableau est affecté (qu'il l'est été ou non)
                 arr->is_set = true;
 
                 // il faut maintenant générer le code permettant de calculer l'adresse
                 int i;
                 struct symbol *address = symbol_new_temp(&symbol_table);
+
+                // avant tout il faut toujours mettre l'adresse à 0
+                struct symbol *address_null = symbol_new_temp(&symbol_table);
+                address_null->int_value = 0;
+                struct quad *addr_null = quad_gen(&quad_list, QUAD_ASSIGNMENT, address, address_null, NULL, false, NULL);
+                $$.code = list_concat($$.code, list_new(addr_null));
+
                 struct symbol *addri = NULL;
                 struct symbol *sizeiplus1 = NULL;
                 struct symbol *inter_result = NULL;
@@ -1528,6 +1554,7 @@ declaration_or_assignment:
                 // récupération du symbole contenant le nom du tableau
                 struct symbol *arr = symbol_lookup(symbol_table, $4->identifier);
                 // l'id est initialisé
+                id->is_declared = true;
                 id->is_set = true;
 
                 // vérification de la taille des tableaux (ndim de l'id = ndim de la référence)
@@ -1541,6 +1568,13 @@ declaration_or_assignment:
                 // il faut maintenant générer le code permettant de calculer l'adresse
                 int i;
                 struct symbol *address = symbol_new_temp(&symbol_table);
+
+                // avant tout il faut toujours mettre l'adresse à 0
+                struct symbol *address_null = symbol_new_temp(&symbol_table);
+                address_null->int_value = 0;
+                struct quad *addr_null = quad_gen(&quad_list, QUAD_ASSIGNMENT, address, address_null, NULL, false, NULL);
+                $$.code = list_concat($$.code, list_new(addr_null));
+
                 struct symbol *addri = NULL;
                 struct symbol *sizeiplus1 = NULL;
                 struct symbol *inter_result = NULL;
