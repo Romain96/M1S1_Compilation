@@ -87,7 +87,6 @@ return 		"return"
                             return INT_ARRAY;
                         }
 {array_reference}       {
-                            printf("ref %s\n", yytext);
                             yylval.array_reference = array_parser_parse_reference(yytext);
                             char user_identifier_prefix[] = "__mips__";
                             char *user_id = __array_parser_extract_reference_identifier(yytext);
@@ -113,7 +112,6 @@ return 		"return"
                             return INT_ARRAY_REFERENCE;
                         }
 {identifier}          	{
-                            printf("id %s\n", yytext);
                             char user_identifier_prefix[] = "__mips__";
                             yylval.string = malloc((strlen(yytext) + strlen(user_identifier_prefix) + 1) * sizeof(char));
                             strcat(yylval.string, user_identifier_prefix);

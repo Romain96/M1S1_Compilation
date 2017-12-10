@@ -288,7 +288,6 @@ control_struct:
                         printf("control_struct -> FOR (for_init; condition; for_iterator)\n");
 
                 struct symbol *incr = symbol_new_temp(&symbol_table);
-                struct symbol *res = symbol_new_temp(&symbol_table);
                 incr->int_value = 1;
 
                 struct quad *goto_cond = NULL;
@@ -307,7 +306,7 @@ control_struct:
                                 goto_cond = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $5.code->current_quad->label_name);
 
                                 // on génère l'incrémentation
-                                iterator = quad_gen(&quad_list, QUAD_PLUS, $3.result, incr, res, false, NULL);
+                                iterator = quad_gen(&quad_list, QUAD_PLUS, $3.result, incr, $3.result, false, NULL);
                                 
                                 // on génère un goto inconditionnel vers le premier quad du bloc d'instructions
                                 goto_block = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $9.code->current_quad->label_name);
@@ -322,7 +321,7 @@ control_struct:
                                 break;
                         case INCR_AFTER:	                                        
                                 // on génère le quad de l'incrémentation
-        	                iterator = quad_gen(&quad_list, QUAD_PLUS, $3.result, incr, res, false, NULL);
+        	                iterator = quad_gen(&quad_list, QUAD_PLUS, $3.result, incr, $3.result, false, NULL);
 
                                 // on marque le premier quad du bloc d'instructions
                                 quad_label($9.code->current_quad);
@@ -347,7 +346,7 @@ control_struct:
                                 goto_cond = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $5.code->current_quad->label_name);
 
                                 // on génère la décrémentation
-                                iterator = quad_gen(&quad_list, QUAD_PLUS, $3.result, incr, res, false, NULL);
+                                iterator = quad_gen(&quad_list, QUAD_PLUS, $3.result, incr, $3.result, false, NULL);
                                 
                                 // on génère un goto inconditionnel vers le premier quad du bloc d'instructions
                                 goto_block = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, $9.code->current_quad->label_name);
@@ -362,7 +361,7 @@ control_struct:
                                 break;
                         case DECR_AFTER:
                                 // on génère la décrémentation
-        	                iterator = quad_gen(&quad_list, QUAD_MINUS, $3.result, incr, res, false, NULL);
+        	                iterator = quad_gen(&quad_list, QUAD_MINUS, $3.result, incr, $3.result, false, NULL);
 
                                 // on marque le premier quad du bloc d'instructions
                                 quad_label($9.code->current_quad);
@@ -528,12 +527,9 @@ expression:
 		struct symbol *incr = symbol_new_temp(&symbol_table);
 		incr->int_value = 1;
 
-                // génération d'un nouveau temporaire
-		struct symbol *res = symbol_new_temp(&symbol_table);
-
                 // génération d'un nouveau quad codant l'addition
-		struct quad *new_quad = quad_gen(&quad_list, QUAD_PLUS, id, incr, res, false, NULL);
-		$$.result = res;
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_PLUS, id, incr, id, false, NULL);
+		$$.result = id;
 		$$.code = list_new(new_quad);
                 $$.truelist = NULL;
                 $$.falselist = NULL;
@@ -575,12 +571,9 @@ expression:
 		struct symbol *incr = symbol_new_temp(&symbol_table);
 		incr->int_value = 1;
 
-                // génération d'un nouveau temporaire
-		struct symbol *res = symbol_new_temp(&symbol_table);
-
                 // génération d'un nouveau quad codant la soustraction
-		struct quad *new_quad = quad_gen(&quad_list, QUAD_MINUS, id, incr, res, false, NULL);
-		$$.result = res;
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_MINUS, id, incr, id, false, NULL);
+		$$.result = id;
 		$$.code = list_new(new_quad);
                 $$.truelist = NULL;
                 $$.falselist = NULL;
@@ -711,14 +704,11 @@ expression:
 		incr->int_value = 1;
                 incr->is_constant = true;
 
-                // génération d'un nouveau temporaire
-		struct symbol *res = symbol_new_temp(&symbol_table);
-
                 // génération d'un nouveau quad codant l'addition
-		struct quad *new_quad = quad_gen(&quad_list, QUAD_PLUS, id, incr, res, false, NULL);
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_PLUS, id, incr, id, false, NULL);
 
                 // le code est juste le nouveau quad
-		$$.result = res;
+		$$.result = id;
 		$$.code = list_new(new_quad);
                 $$.truelist = NULL;
                 $$.falselist = NULL;
@@ -761,14 +751,11 @@ expression:
 		decr->int_value = 1;
                 decr->is_constant = true;
 
-                // génération d'un nouveau temporaire
-		struct symbol *res = symbol_new_temp(&symbol_table);
-
                 // génération d'un nouveau quad codant la soustraction
-		struct quad *new_quad = quad_gen(&quad_list, QUAD_MINUS, id, decr, res, false, NULL);
+		struct quad *new_quad = quad_gen(&quad_list, QUAD_MINUS, id, decr, id, false, NULL);
 
                 // le code est juste le nouveau quad
-		$$.result = res;
+		$$.result = id;
 		$$.code = list_new(new_quad);
                 $$.truelist = NULL;
                 $$.falselist = NULL;
@@ -911,6 +898,13 @@ declaration_or_assignment:
                 // il faut maintenant générer le code permettant de calculer l'adresse
                 int i;
                 struct symbol *address = symbol_new_temp(&symbol_table);
+
+                // avant tout il faut toujours mettre l'adresse à 0
+                struct symbol *address_null = symbol_new_temp(&symbol_table);
+                address_null->int_value = 0;
+                struct quad *addr_null = quad_gen(&quad_list, QUAD_ASSIGNMENT, address, address_null, NULL, false, NULL);
+                $$.code = list_concat($$.code, list_new(addr_null));
+
                 struct symbol *addri = NULL;
                 struct symbol *sizeiplus1 = NULL;
                 struct symbol *inter_result = NULL;
@@ -950,7 +944,7 @@ declaration_or_assignment:
                         $$.code = list_concat($$.code, list_new(quad_addri));
 
                         // génération du quad address = address + inter_result
-                        quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, address, inter_result, false, NULL);
+                        quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, inter_result, address, false, NULL);
 
                         // ajout de ce quad au code
                         $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));                        
@@ -970,7 +964,7 @@ declaration_or_assignment:
                 }
 
                 // génération du quad address = address + addri
-                quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, address, addri, false, NULL);
+                quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, addri, address, false, NULL);
 
                 // ajout de ce quad au code
                 $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));   
@@ -1027,6 +1021,13 @@ declaration_or_assignment:
                 // il faut maintenant générer le code permettant de calculer l'adresse
                 int i;
                 struct symbol *address = symbol_new_temp(&symbol_table);
+
+                // avant tout il faut toujours mettre l'adresse à 0
+                struct symbol *address_null = symbol_new_temp(&symbol_table);
+                address_null->int_value = 0;
+                struct quad *addr_null = quad_gen(&quad_list, QUAD_ASSIGNMENT, address, address_null, NULL, false, NULL);
+                $$.code = list_concat($$.code, list_new(addr_null));
+
                 struct symbol *addri = NULL;
                 struct symbol *sizeiplus1 = NULL;
                 struct symbol *inter_result = NULL;
@@ -1066,7 +1067,7 @@ declaration_or_assignment:
                         $$.code = list_concat($$.code, list_new(quad_addri));
 
                         // génération du quad address = address + inter_result
-                        quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, address, inter_result, false, NULL);
+                        quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, inter_result, address, false, NULL);
 
                         // ajout de ce quad au code
                         $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));                        
@@ -1086,7 +1087,7 @@ declaration_or_assignment:
                 }
 
                 // génération du quad address = address + addri
-                quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, address, addri, false, NULL);
+                quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, addri, address, false, NULL);
 
                 // ajout de ce quad au code
                 $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));   
@@ -1142,6 +1143,19 @@ declaration_or_assignment:
                 int i;
                 struct symbol *address_lval = symbol_new_temp(&symbol_table);
                 struct symbol *address_rval = symbol_new_temp(&symbol_table);
+
+                // avant tout il faut toujours mettre l'adresse à 0 (lval)
+                struct symbol *address_null_lval = symbol_new_temp(&symbol_table);
+                address_null_lval->int_value = 0;
+                struct quad *addr_null_lval = quad_gen(&quad_list, QUAD_ASSIGNMENT, address_lval, address_null_lval, NULL, false, NULL);
+                $$.code = list_concat($$.code, list_new(addr_null_lval));
+
+                // avant tout il faut toujours mettre l'adresse à 0 (rval)
+                struct symbol *address_null_rval = symbol_new_temp(&symbol_table);
+                address_null_rval->int_value = 0;
+                struct quad *addr_null_rval = quad_gen(&quad_list, QUAD_ASSIGNMENT, address_rval, address_null_rval, NULL, false, NULL);
+                $$.code = list_concat($$.code, list_new(addr_null_rval));
+
                 struct symbol *addri = NULL;
                 struct symbol *sizeiplus1 = NULL;
                 struct symbol *inter_result = NULL;
@@ -1366,7 +1380,7 @@ declaration_or_assignment:
                         $$.code = list_concat($$.code, list_new(quad_addri));
 
                         // génération du quad address = address + inter_result
-                        quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, address, inter_result, false, NULL);
+                        quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, inter_result, address, false, NULL);
 
                         // ajout de ce quad au code
                         $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));                        
@@ -1386,7 +1400,7 @@ declaration_or_assignment:
                 }
 
                 // génération du quad address = address + addri
-                quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, address, addri, false, NULL);
+                quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, addri, address, false, NULL);
 
                 // ajout de ce quad au code
                 $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));   
@@ -1438,7 +1452,6 @@ declaration_or_assignment:
 		struct symbol *id = symbol_lookup(symbol_table, $2);
 
                 // génération d'un quad codant l'affectation
-                printf("ASSIGNMENT %s = %s\n", id->identifier, $4.result->identifier);
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $4.result, NULL, false, NULL);
                 
                 // maintenant l'id est déclaré et initialisé
@@ -1475,6 +1488,7 @@ declaration_or_assignment:
                 id->is_set = true;
 
                 // DEBUG
+                array_parser_print(arr->int_array_value);
                 array_parser_print($4);
 
                 // vérification de la taille des tableaux (ndim de l'id = ndim de la référence)
@@ -1527,7 +1541,7 @@ declaration_or_assignment:
                         $$.code = list_concat($$.code, list_new(quad_addri));
 
                         // génération du quad address = address + inter_result
-                        quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, address, inter_result, false, NULL);
+                        quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, inter_result, address, false, NULL);
 
                         // ajout de ce quad au code
                         $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));                        
@@ -1544,12 +1558,10 @@ declaration_or_assignment:
                         addri = symbol_new_temp(&symbol_table);
                         addri->int_value = $4->index_of_dimensions[i].value;
                         addri->is_constant = true;
-                        printf("addri = %d\n", $4->index_of_dimensions[i].value);
                 }
 
                 // génération du quad address = address + addri
                 quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, addri, address, false, NULL);
-                printf("address(%d) = address(%d) + addri(%d)\n", address->int_value, address->int_value, addri->int_value);
 
                 // ajout de ce quad au code
                 $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));   
@@ -1557,11 +1569,9 @@ declaration_or_assignment:
                 // en dernier il faut multiplier par la taille des registres (4 bytes)
                 struct symbol *register_size = symbol_new_temp(&symbol_table);
                 register_size->int_value = MIPS_REGISTER_SIZE_IN_BYTES;
-                printf("register_size = %d\n", MIPS_REGISTER_SIZE_IN_BYTES);
 
                 // quad de la multiplication par MIPS_REGISTER_SIZE_IN_BYTES
                 struct quad *final_address = quad_gen(&quad_list, QUAD_MULTIPLY, address, register_size, address, false, NULL);
-                printf("address(%d) = address(%d) * register_size(%d)\n", address->int_value, address->int_value, register_size->int_value);
 
                 // ajout au code
                 $$.code = list_concat($$.code, list_new(final_address));
