@@ -34,7 +34,7 @@ le StenC [Sten-Ci] est un sous ensemble du C auquel on a ajouté un type stencil
 - il existe un nouveau type **stencil**
 - il existe un nouvel opérateur **$** d'application des stencils
 
-## Milestones [en construction]
+## Milestones
 
 |    DATE    |    DESCRIPTION    |
 |------------|-------------------|
@@ -46,9 +46,44 @@ le StenC [Sten-Ci] est un sous ensemble du C auquel on a ajouté un type stencil
 | 2017-11-30 | Génération de code MIPS pour les conditions booléennes |
 | 2017-12-02 | Génération de code MIPS pour les structures de contrôle (if, else, for, while) |
 | 2017-12-09 | Génération de code MIPS pour les tableaux et références de tableaux |
-|     ?      |        ?          |
+| 2017-12-10 | Rendu officiel du projet, passage de ce projet en public |
 
-## Spécification complète du compilateur [à venir]
+## Spécification complète du compilateur
 
 Cette section décrit la spécification complète de nôtre compilateur c'est-à-dire tout ce qu'il est capable de 
 reconnaître et de produire en terme de code assembleur.
+
+|  Opérateurs/Instructions  | Support |
+|---------------------------|---------|
+| expr + expr               |    x    |
+| expr - expr               |    x    |
+| expr * expr               |    x    |
+| expr / expr               |    x    |
+| - expr                    |    x    |
+| ( expr )                  |    x    |
+| id == id                  |    x    |
+| id != id                  |    x    |
+| id < id                   |    x    |
+| id > id                   |    x    |
+| id <= id                  |    x    |
+| id >= id                  |    x    |
+| cond && cond              |    x    |
+| cond \|\| cond            |    x    |
+| ! cond                    |    x    |
+| if (cond) {...}           |    x    |
+| if (cond) {...} else {...}|    x    |
+| while (cond) {...}        |    x    |
+| for (init; cond; it) {...}|    x    |
+| printf("chaine")          |    x    |
+| prini(id)                 |    x    |
+| printi(42)                |    x    |
+| tab[] = {...}             |    x    |
+| tab[i1]...[in] = id       |    x    |
+| tab[i1]...[in] = 42       |    x    |
+| tab[i1][in]= tab[i1][im]  |    x    |
+| id = tab[i1]...[in]       |    x    |
+| int f(a1,..., an) {...}   |         |
+| stencil s{1,2} = {...}    |         |
+| id $ s                    |         |
+
+Une version plus détaillée est disponible dans le rapport de projet "rapport.pdf"

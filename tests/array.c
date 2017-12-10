@@ -1,15 +1,18 @@
 // manipulation of arrays
 int main()
 {
-	int array[] = {1,2,3,4,5};
-	int value = array[4];
-	printf("fifth value of array is ");
-	printi(value);
-	printf("\n");
-	array[4] = 42;
-	value = array[4];
-	printf("now fifth value of array is ");
-	printi(value);
-	printf("\n");
+	int array[] = {3,1,4,1,5,9,2,6,5};
+	int size = 9;
+	int i;
+	int nb;
+	for (i = 0; i < size; i++)
+	{
+		printf("array[");
+		printi(i);
+		printf("] contains ");
+		nb = array[i];
+		printi(nb);	
+		printf("\n");
+	}
 	return 0;
 }
