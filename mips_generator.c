@@ -208,6 +208,9 @@ void __mips_write_quad_list(struct mips_generator *mips)
                                 case QUAD_DIVIDE:
                                         __mips_generate_division(mips, iterator);
                                         break;
+                                case QUAD_NEG:
+                                        __mips_generate_negation(mips, iterator);
+                                        break;
                                 case QUAD_ASSIGNMENT:
                                         __mips_generate_assignment(mips, iterator);
                                         break;
@@ -382,6 +385,29 @@ void __mips_generate_division(struct mips_generator *mips, struct quad *q)
 
         // 5) placer la valeur de la somme du registre vers la ram (sw $t0, res)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw $t0, %s\n", q->res->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+}
+
+// Fonction             : __mips_generate_negation
+// Argument(s)          : - mips : une structure mips_generator générée par mips_setup
+//                        - quad : le quad contenant la repésentation de l'instruction à générer
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : génère le code MIPS d'une division
+void __mips_generate_negation(struct mips_generator *mips, struct quad *q)
+{
+        // 1) charger la valeur de l'opérande 1 dans le registre t1 (lw $t1, arg1)
+        char line_to_write[MIPS_MAX_LINE_SIZE];
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 2) utiliser l'instruction de négation (negu $t1, $t1)
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "negu $t1, $t1\n");
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 3) placer la valeur dans la RAM
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw $t1, %s\n", q->res->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 }
 

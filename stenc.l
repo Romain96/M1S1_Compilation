@@ -16,7 +16,7 @@
 comment             ([/][*][^*]*[*]+([^*/][^*]*[*]+)*[/])|("//".*)
 error_comment       [/][*]
 int_array           "{"[{},0-9\- ]*"}"
-integer             [-]?([0-9]|([1-9][0-9]*))
+integer             ([0-9]|([1-9][0-9]*))
 array_reference     [a-z_][a-zA-Z_]*"[".+"]"+
 identifier          [a-z_][a-zA-Z_0-9]*
 string              ["][^\"]*["]
@@ -57,6 +57,8 @@ while               "while"
 
 type_int            "int"
 type_stencil        "stencil"
+stencil_op          "$"
+stencil             [a-z_][a-zA-Z_0-9]*"{"([0-9]|([1-9][0-9]*))","([0-9]|([1-9][0-9]*))"}"
 
 main		"main"[ ]*"()"
 return 		"return"
@@ -76,7 +78,14 @@ return 		"return"
 {while}                 { return WHILE; }
 
 {type_int}           	{ return TYPE_INT; }
-{type_stencil}{left_bracket}{integer}{comma}{integer}{right_bracket}   { return TYPE_STENCIL; }
+{type_stencil}{left_bracket}{integer}{comma}{integer}{right_bracket}   { 
+                                                                            fprintf(stderr, "Stencils are not yet supported by the compiler\n");
+                                                                            exit(1); 
+                                                                        }
+{stencil}               {
+                            fprintf(stderr, "Stencil keyword 'stencil' is not yet supported by the compiler\n");
+                            exit(1);
+                        }
 
 {integer}               { 
                             yylval.integer_value = atoi(yytext); 
@@ -152,6 +161,11 @@ return 		"return"
 {right_bracket}         { return RIGHT_BRACKET; }
 {left_round_bracket}    { return LEFT_ROUND_BRACKET; }
 {right_round_bracket}   { return RIGHT_ROUND_BRACKET; }
+
+{stencil_op}            { 
+                            fprintf(stderr, "Stencil operator '$' is not yet supported by the compiler\n");
+                            exit(1);
+                        }
 
 \t|\n|\r                {  }
 [ ]                     {  }

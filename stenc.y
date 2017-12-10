@@ -669,6 +669,49 @@ expression:
                 $$.nextlist = NULL;
                 $$.array_value = NULL;
         }
+        | MINUS expression
+        {
+                // on recherche l'id
+                struct symbol *id = symbol_lookup(symbol_table, $2.result->identifier);
+
+                // l'id doit être déclaré
+                if (!id->is_declared)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
+                        exit(1);
+                }
+                // et déjà initialisé
+                if (!id->is_set)
+                {
+                        fprintf(stderr, "semantic error : %s hasn't been initialized previously\n", id->identifier+8);
+                        exit(1);
+                }
+                // et aussi être un entier (pas un int_array ou une string_litteral)
+                if (id->is_string_litteral)
+                {
+                        fprintf(stderr, "semantic error : cannot increment or decrement the string litteral variable %s\n", id->identifier+8);
+                        exit(1);
+                }
+                if (id->is_int_array)
+                {
+                        fprintf(stderr, "semantic error : cannot increment or decrement the integer array variable %s\n", id->identifier+8);
+                        exit(1);
+                }
+
+                // on génère un nouveau temporaire
+                struct symbol *res = symbol_new_temp(&symbol_table);
+
+                // on génère le quad de la négation
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_NEG, id, NULL, res, false, NULL);
+
+                // le code est la concaténation du code de l'expression et du nouveau quad
+                $$.code = list_concat($2.code, list_new(new_quad));
+                $$.result = res;
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.nextlist = NULL;
+                $$.array_value = $2.array_value;
+        }
 	| INCREASE IDENTIFIER
 	{
                 if (_verbose_output)

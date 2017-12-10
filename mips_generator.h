@@ -32,6 +32,7 @@ void __mips_generate_addition(struct mips_generator *, struct quad *);
 void __mips_generate_substraction(struct mips_generator *, struct quad*);
 void __mips_generate_multiplication(struct mips_generator *, struct quad *);
 void __mips_generate_division(struct mips_generator *, struct quad *);
+void __mips_generate_negation(struct mips_generator *, struct quad *);
 
 // génération d'un affichage d'une variable d'entier ou d'un entier
 void __mips_generate_print_integer(struct mips_generator *, struct quad *);
