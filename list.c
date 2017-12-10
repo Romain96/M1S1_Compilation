@@ -44,6 +44,8 @@ struct list *list_concat(struct list *l1, struct list *l2)
 // complète tous les quads marqués goto par le numéro du label indiqué
 void list_complete(struct list *l, char *label)
 {
+        if (l == NULL)
+                return;
         struct list *iterator = l;
         // parcours de la liste
         while(iterator != NULL)

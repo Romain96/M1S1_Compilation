@@ -1530,10 +1530,6 @@ declaration_or_assignment:
                 // l'id est initialisé
                 id->is_set = true;
 
-                // DEBUG
-                array_parser_print(arr->int_array_value);
-                array_parser_print($4);
-
                 // vérification de la taille des tableaux (ndim de l'id = ndim de la référence)
                 if (arr->int_array_value->number_of_dimensions != $4->number_of_dimensions)
                 {
@@ -1684,6 +1680,7 @@ condition:
                         printf("condition -> condition BOOL_OR condition\n");
 
                 // on complète la falselist de expression1 par le premier quad de expression2
+                quad_label($3.code->current_quad);
                 list_complete($1.falselist, $3.code->current_quad->label_name);
 
                 // la falselist est la falselist de expression2
@@ -1704,6 +1701,7 @@ condition:
                         printf("condition -> condition BOOL_OR condition\n");
 
                 // on complète la truelist de expression1 par le numéro du premier quad de expression2
+                quad_label($3.code->current_quad);
                 list_complete($1.truelist, $3.code->current_quad->label_name);
 
                 // la falselist est la concaténation des falselist de expression1 et expression2
@@ -1802,7 +1800,7 @@ condition:
                 }
 
                 // génération du goto conditionnel : if ID1 == ID2 goto ?
-                struct quad *new_quad_true;
+                struct quad *new_quad_true = NULL;
                 switch ($2)
                 {
                         case EQ:
