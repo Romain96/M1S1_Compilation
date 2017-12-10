@@ -3,15 +3,26 @@
 
 #include <stdbool.h>
 
+// structure permettant de prendre en compte à la fois les indices entiers et les variables
+struct stenc_index
+{
+	bool is_identifier;
+	union {
+		char *identifier;
+		int value;
+	};
+};
+
 // structure représentant les tableaux ou les références de tableaux
 struct stenc_array
 {
 	char *identifier;		// nom du tableau (tableau et références)
 	int number_of_dimensions;	// nombre de dimensions (tableau et références)
 	int *size_of_dimensions;	// taille de chaque dimension (tableau uniquement)
-	int *index_of_dimensions;	// indice dans chaque dimension (référence uniquement)
 	int size_of_data;		// nombre de valeurs (tableau et références quand affectation de tableau)
 	int *data;			// valeurs (tableau uniquement)
+	// permet de représenter les indices (entier et variablres)
+	struct stenc_index *index_of_dimensions;
 };
 
 // fonctions de manipulation des valeurs de tableau
@@ -26,7 +37,7 @@ struct stenc_array *array_parser_parse_text(char *);
 // fonctions de manipulation des références de tableau
 char *__array_parser_extract_reference_identifier(char *);
 int __array_parser_count_reference_dimensions(char *);
-int *__array_parser_count_index_of_dimensions(char *, int);
+struct stenc_index *__array_parser_count_index_of_dimensions(char *, int);
 struct stenc_array *array_parser_parse_reference(char *);
 
 void array_parser_free(struct stenc_array *);

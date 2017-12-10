@@ -1,12 +1,8 @@
 int main()
 {
-	int i = 0;
-	int n = 10;
-	for (i = 0; i < n; ++i)
-	{
-		printf("valeur de i : ");
-		printi(i);
-		printf("\n");
-	}
+	int tab[] = {10,42,54,85,100};
+	int indice = 1;
+	int nb = tab[indice];
+	printi(nb);
 	return 0;
 }

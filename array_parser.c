@@ -350,14 +350,14 @@ int __array_parser_count_reference_dimensions(char *text)
 // Fonction             : __array_parser_count_index_of_dimensions
 // Argument(s)          : - text : la chaine de caractères à parser
 //			  - ndim : la nombre de dimensions de l'array (decrait être obtenu avec __array_parser_count_reference_dimensions)
-// Valeur de retour     : un tableau de taille ndim (alloué) contenant l'indice pour chaque dimension
+// Valeur de retour     : une structure stenc_index de taille ndim (alloué) contenant l'indice pour chaque dimension (ou l'id)
 // Pré-condition(s)     : /
 // Post-condition(s)    : /
 // Commentaire(s)       : remplit l'index de chaque dimension
-int *__array_parser_count_index_of_dimensions(char *text, int ndim)
+struct stenc_index *__array_parser_count_index_of_dimensions(char *text, int ndim)
 {
 	// allocation de la mémoire pour le tableau des indices
-	int *index_array = malloc(ndim * sizeof(int));
+	struct stenc_index *index_array = malloc(ndim * sizeof(struct stenc_index));
 	if (index_array == NULL)
 	{
 		fprintf(stderr, "[ARRAY_PARSER::__array_parser_count_index_of_dimensions] ERROR while allocating memory for index_array\n");
@@ -376,22 +376,46 @@ int *__array_parser_count_index_of_dimensions(char *text, int ndim)
 	// parcours des références
 	while (i < strlen(text) + 1)
 	{
-		if (text[i] >= '0' && text[i] <= '9')
+		// l'indice est un nombre entier
+		if (text[i] >= '0' && text[i] <= '9' || text[i] == '-')
 		{
 			index_begin = i;
 			while (i < strlen(text) + 1 && (text[i] >= '0' && text[i] <= '9'))
 				i++;
-			// extraction
+			// extraction de l'entier
 			index_end = i;
 			char *index = malloc((index_end - index_begin + 1) * sizeof(char));
 			if (index == NULL)
 			{
-				fprintf(stderr, "[ARRAY_PARSER::__array_parser_count_index_of_dimensions] ERROR while allocating memory for index\n");
+				fprintf(stderr, "[ARRAY_PARSER::__array_parser_count_index_of_dimensions] ERROR while allocating memory for index (int)\n");
 				exit(EXIT_FAILURE);
 			}
 			strncpy(index, text + index_begin, (index_end - index_begin));
 			index[index_end - index_begin] = '\0';
-			index_array[index_number] = atoi(index);
+			index_array[index_number].is_identifier = false;
+			index_array[index_number].value = atoi(index);
+			//free(index);
+			index_number++;
+		}
+		// l'indice est un identifier
+		else if ((text[i] >= 'A' && text[i] <= 'Z') || (text[i] >= 'a' && text[i] <= 'z') || text[i] == '_')
+		{
+			index_begin = i;
+			while (i < strlen(text) + 1 && (text[i] >= 'A' && text[i] <= 'Z') || 
+			(text[i] >= 'a' && text[i] <= 'z') || (text[i] >= '0' && text[i] <= '9') || text[i] == '_')
+				i++;
+			// extraction de l'id
+			index_end = i;
+			char *index = malloc((index_end - index_begin + 1) * sizeof(char));
+			if (index == NULL)
+			{
+				fprintf(stderr, "[ARRAY_PARSER::__array_parser_count_index_of_dimensions] ERROR while allocating memory for index (id)\n");
+				exit(EXIT_FAILURE);
+			}
+			strncpy(index, text + index_begin, (index_end - index_begin));
+			index[index_end - index_begin] = '\0';
+			index_array[index_number].is_identifier = true;
+			index_array[index_number].identifier = index;
 			index_number++;
 		}
 		i++;
@@ -414,7 +438,7 @@ struct stenc_array *array_parser_parse_reference(char *text)
 	int ndim = __array_parser_count_reference_dimensions(text);
 	
 	// remplissage de l'index de chaque dimension
-	int *index_array = __array_parser_count_index_of_dimensions(text, ndim);
+	struct stenc_index *index_array = __array_parser_count_index_of_dimensions(text, ndim);
 
 	// allocation de la structure
 	struct stenc_array *arr = malloc(sizeof(struct stenc_array));
@@ -444,12 +468,16 @@ void array_parser_free(struct stenc_array *arr)
 {
 	if (arr->identifier != NULL)
 		free(arr->identifier);
-	if (arr->index_of_dimensions != NULL)
-		free(arr->index_of_dimensions);
 	if (arr->size_of_dimensions != NULL)
 		free(arr->size_of_dimensions);
 	if (arr->data != NULL)
 		free(arr->data);
+	if (arr->index_of_dimensions != NULL)
+	{
+		if(arr->index_of_dimensions->is_identifier && arr->index_of_dimensions->identifier != NULL)
+			free(arr->index_of_dimensions->identifier);
+		free(arr->index_of_dimensions);
+	}
 	free(arr);
 }
 
@@ -475,7 +503,12 @@ void array_parser_print(struct stenc_array *arr)
 	if (arr->index_of_dimensions != NULL)
 	{
 		for (int i = 0; i < arr->number_of_dimensions; i++)
-			printf("index on dimension %d is %d\n", i, arr->index_of_dimensions[i]);
+		{
+			if (arr->index_of_dimensions[i].is_identifier)
+				printf("index of dimension %d is value of id %s\n", i, arr->index_of_dimensions[i].identifier);
+			else
+				printf("index on dimension %d is %d\n", i, arr->index_of_dimensions[i].value);
+		}
 	}
 	printf("Data :\n");
 	if (arr->data != NULL)

@@ -290,7 +290,7 @@ void __mips_generate_addition(struct mips_generator *mips, struct quad *q)
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 4) placer la valeur de la somme du registre vers la ram (sw $t0, arg1)
-        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw $t0, %s\n", q->arg1->identifier);
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "sw $t0, %s\n", q->res->identifier);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 }
 
@@ -340,12 +340,12 @@ void __mips_generate_multiplication(struct mips_generator *mips, struct quad *q)
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 3) calculer la multiplication (mult $t1, $t2)
-        // (Hi,Lo) est le résultat (on ne s'intéresse qu'à Hi pour la valeur entière)
+        // (Hi,Lo) est le résultat (on ne s'intéresse qu'à Lo pour la valeur entière)
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "mult $t1, $t2\n");
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
-        // 4) placer le résultat du registre Hi dans le registre temporaire $t0 (mfhi $t0)
-        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "mfhi $t0\n");
+        // 4) placer le résultat du registre lo dans le registre temporaire $t0 (mflo $t0)
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "mflo $t0\n");
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 
         // 5) placer la valeur de la somme du registre vers la ram (sw $t0, res)

@@ -53,8 +53,8 @@
 %token <string> IDENTIFIER STRING
 %token <array> INT_ARRAY
 %token <array_reference> INT_ARRAY_REFERENCE
-%token PLUS MINUS MULTIPLY DIVIDE
 %token ASSIGNMENT
+%token PLUS MINUS MULTIPLY DIVIDE
 %token COMMA SEMICOLON
 %token INCREASE DECREASE
 %token PRINT_STRING PRINT_INTEGER
@@ -79,9 +79,9 @@
 %type <relop_code> relop
 %type <gencode> print_function_call
 
+%right ASSIGNMENT
 %left PLUS MINUS
 %left MULTIPLY DIVIDE
-%right ASSIGNMENT
 %left BOOL_AND BOOL_OR
 %nonassoc BOOL_NOT
 %nonassoc IF ELSE
@@ -480,7 +480,20 @@ instruction_block:
         ;
 
 expression:
-        IDENTIFIER INCREASE
+        declaration_or_assignment
+        {
+                if (_verbose_output)
+                        printf("expression -> declaration_or_assignment\n");
+
+                // simple passage du code et du résultat
+                $$.result = $1.result;
+                $$.code = $1.code;
+                $$.truelist = NULL;
+                $$.falselist = NULL;
+                $$.nextlist = NULL;
+                $$.array_value = $1.array_value;
+        }
+        | IDENTIFIER INCREASE
 	{
                 if (_verbose_output)
 		        printf("expression -> IDENTIFIER INCREASE (low priority)\n");
@@ -662,19 +675,6 @@ expression:
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
                 $$.array_value = NULL;
-        }
-        | declaration_or_assignment
-        {
-                if (_verbose_output)
-                        printf("expression -> declaration_or_assignment\n");
-
-                // simple passage du code et du résultat
-                $$.result = $1.result;
-                $$.code = $1.code;
-                $$.truelist = NULL;
-                $$.falselist = NULL;
-                $$.nextlist = NULL;
-                $$.array_value = $1.array_value;
         }
 	| INCREASE IDENTIFIER
 	{
@@ -907,39 +907,90 @@ declaration_or_assignment:
                         $3->number_of_dimensions, arr->int_array_value->number_of_dimensions);
                         exit(1);
                 }     
-                
-                // vérification de la validité des indices
-                for (int i = 0; i < arr->int_array_value->number_of_dimensions; i++)
-                {
-                        // chaque indice doit être inférieur à la taile de la dimension correspondante
-                        if ($3->index_of_dimensions[i] >= arr->int_array_value->size_of_dimensions[i])
-                        {
-                                fprintf(stderr, "semantic error : index %d is out of range of dimension %d (size is %d) of array %s\n", 
-                                $3->index_of_dimensions[i], i, arr->int_array_value->size_of_dimensions[i], arr->identifier + 8);
-                                exit(1);
-                        }
-                }
 
-                // calcul de l'adresse de l'élément à accéder
-                int address = 0;
+                // il faut maintenant générer le code permettant de calculer l'adresse
                 int i;
+                struct symbol *address = symbol_new_temp(&symbol_table);
+                struct symbol *addri = NULL;
+                struct symbol *sizeiplus1 = NULL;
+                struct symbol *inter_result = NULL;
+                struct quad *quad_addri = NULL;
+                struct quad *quad_addr_plus_addri = NULL;
                 for (i = 0; i < arr->int_array_value->number_of_dimensions - 1; i++)
                 {
-                        address += $3->index_of_dimensions[i] * arr->int_array_value->size_of_dimensions[i + 1];
-                }
-                address += $3->index_of_dimensions[i];
-                address = address * MIPS_REGISTER_SIZE_IN_BYTES;
+                        // si l'indice est un entier on crée un nouveau temporaire contenant la valeur de l'entier
+                        // et on ajoute le produit entre la dimensions supérieure et l'entier (symbole)
+                        if (!$3->index_of_dimensions[i].is_identifier)
+                        {
+                                // génération du symbole contenant l'indice de la dimension i
+                                addri = symbol_new_temp(&symbol_table);
+                                addri->int_value = $3->index_of_dimensions[i].value;
+                                addri->is_constant = true;
+                        }
+                        // si l'indice est un identificateur on recherche cet identificateur
+                        // et on ajoute le produit entre la dimensions supérieure et ce symbole
+                        else
+                        {
+                                // recherche du symbole contenant l'indice de la dimension i
+                                addri = symbol_lookup(symbol_table, $3->index_of_dimensions[i].identifier);
+                        }
 
-                // ajout d'un nouveau symbole contenant l'adresse
-                struct symbol *addr = symbol_new_temp(&symbol_table);
-                addr->int_value = address;
+                        // génération du symbole contenant la taille de la dimension i+1
+                        sizeiplus1 = symbol_new_temp(&symbol_table);
+                        sizeiplus1->int_value = arr->int_array_value->size_of_dimensions[i + 1];
+                        sizeiplus1->is_constant = true;
+
+                        // génération d'un nouveau symbole contenant le produit de addri par sizeiplus1
+                        inter_result = symbol_new_temp(&symbol_table);
+
+                        // génération du quad de calcul de l'adresse intermédiaire
+                        quad_addri = quad_gen(&quad_list, QUAD_MULTIPLY, addri, sizeiplus1, inter_result, false, NULL);
+
+                        // ajout de ce quad au code
+                        $$.code = list_concat($$.code, list_new(quad_addri));
+
+                        // génération du quad address = address + inter_result
+                        quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, address, inter_result, false, NULL);
+
+                        // ajout de ce quad au code
+                        $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));                        
+                }
+                // génération du dernier symbole contenant l'offset final
+                if ($3->index_of_dimensions[i].is_identifier)
+                {
+                        // recherche du symbole contenant l'indice de la dimension i
+                        addri = symbol_lookup(symbol_table, $3->index_of_dimensions[i].identifier);
+                }
+                else
+                {
+                        // génération du symbole contenant l'indice de la dimension i
+                        addri = symbol_new_temp(&symbol_table);
+                        addri->int_value = $3->index_of_dimensions[i].value;
+                        addri->is_constant = true;
+                }
+
+                // génération du quad address = address + addri
+                quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, address, addri, false, NULL);
+
+                // ajout de ce quad au code
+                $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));   
+
+                // en dernier il faut multiplier par la taille des registres (4 bytes)
+                struct symbol *register_size = symbol_new_temp(&symbol_table);
+                register_size->int_value = MIPS_REGISTER_SIZE_IN_BYTES;
+
+                // quad de la multiplication par MIPS_REGISTER_SIZE_IN_BYTES
+                struct quad *final_address = quad_gen(&quad_list, QUAD_MULTIPLY, address, register_size, address, false, NULL);
+
+                // ajout au code
+                $$.code = list_concat($$.code, list_new(final_address));
 
                 // génération du quad (QUAD_ARRAY_READ)
-                struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_READ, id, arr, addr, false, NULL);
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_READ, id, arr, address, false, NULL);
 
-                // le code est seulement le nouveau quad
+                // on ajoute ce quad au code
                 $$.result = id;
-                $$.code = list_new(new_quad);
+                $$.code = list_concat($$.code, list_new(new_quad));
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
@@ -973,38 +1024,89 @@ declaration_or_assignment:
                 // maintenant le tableau est affecté (qu'il l'est été ou non)
                 arr->is_set = true;
 
-                // vérification de la validité des indices
-                for (int i = 0; i < arr->int_array_value->number_of_dimensions; i++)
-                {
-                        // chaque indice doit être inférieur à la taile de la dimension correspondante
-                        if ($1->index_of_dimensions[i] >= arr->int_array_value->size_of_dimensions[i])
-                        {
-                                fprintf(stderr, "semantic error : index %d is out of range of dimension %d (size is %d) of array %s\n", 
-                                $1->index_of_dimensions[i], i, arr->int_array_value->size_of_dimensions[i], arr->identifier + 8);
-                                exit(1);
-                        }
-                }
-
-                // calcul de l'adresse de l'élément à accéder
-                int address = 0;
-                int i = 0;
+                // il faut maintenant générer le code permettant de calculer l'adresse
+                int i;
+                struct symbol *address = symbol_new_temp(&symbol_table);
+                struct symbol *addri = NULL;
+                struct symbol *sizeiplus1 = NULL;
+                struct symbol *inter_result = NULL;
+                struct quad *quad_addri = NULL;
+                struct quad *quad_addr_plus_addri = NULL;
                 for (i = 0; i < arr->int_array_value->number_of_dimensions - 1; i++)
                 {
-                        address += arr->int_array_value->size_of_dimensions[i + 1] * $1->index_of_dimensions[i];
-                }
-                address += $1->index_of_dimensions[i];
-                address = address * MIPS_REGISTER_SIZE_IN_BYTES;
+                        // si l'indice est un entier on crée un nouveau temporaire contenant la valeur de l'entier
+                        // et on ajoute le produit entre la dimensions supérieure et l'entier (symbole)
+                        if (!$1->index_of_dimensions[i].is_identifier)
+                        {
+                                // génération du symbole contenant l'indice de la dimension i
+                                addri = symbol_new_temp(&symbol_table);
+                                addri->int_value = $1->index_of_dimensions[i].value;
+                                addri->is_constant = true;
+                        }
+                        // si l'indice est un identificateur on recherche cet identificateur
+                        // et on ajoute le produit entre la dimensions supérieure et ce symbole
+                        else
+                        {
+                                // recherche du symbole contenant l'indice de la dimension i
+                                addri = symbol_lookup(symbol_table, $1->index_of_dimensions[i].identifier);
+                        }
 
-                // ajout d'un nouveau symbole contenant l'addresse
-                struct symbol *addr = symbol_new_temp(&symbol_table);
-                addr->int_value = address;
+                        // génération du symbole contenant la taille de la dimension i+1
+                        sizeiplus1 = symbol_new_temp(&symbol_table);
+                        sizeiplus1->int_value = arr->int_array_value->size_of_dimensions[i + 1];
+                        sizeiplus1->is_constant = true;
+
+                        // génération d'un nouveau symbole contenant le produit de addri par sizeiplus1
+                        inter_result = symbol_new_temp(&symbol_table);
+
+                        // génération du quad de calcul de l'adresse intermédiaire
+                        quad_addri = quad_gen(&quad_list, QUAD_MULTIPLY, addri, sizeiplus1, inter_result, false, NULL);
+
+                        // ajout de ce quad au code
+                        $$.code = list_concat($$.code, list_new(quad_addri));
+
+                        // génération du quad address = address + inter_result
+                        quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, address, inter_result, false, NULL);
+
+                        // ajout de ce quad au code
+                        $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));                        
+                }
+                // génération du dernier symbole contenant l'offset final
+                if ($1->index_of_dimensions[i].is_identifier)
+                {
+                        // recherche du symbole contenant l'indice de la dimension i
+                        addri = symbol_lookup(symbol_table, $1->index_of_dimensions[i].identifier);
+                }
+                else
+                {
+                        // génération du symbole contenant l'indice de la dimension i
+                        addri = symbol_new_temp(&symbol_table);
+                        addri->int_value = $1->index_of_dimensions[i].value;
+                        addri->is_constant = true;
+                }
+
+                // génération du quad address = address + addri
+                quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, address, addri, false, NULL);
+
+                // ajout de ce quad au code
+                $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));   
+
+                // en dernier il faut multiplier par la taille des registres (4 bytes)
+                struct symbol *register_size = symbol_new_temp(&symbol_table);
+                register_size->int_value = MIPS_REGISTER_SIZE_IN_BYTES;
+
+                // quad de la multiplication par MIPS_REGISTER_SIZE_IN_BYTES
+                struct quad *final_address = quad_gen(&quad_list, QUAD_MULTIPLY, address, register_size, address, false, NULL);
+
+                // ajout au code
+                $$.code = list_concat($$.code, list_new(final_address));
 
                 // génération du quad (QUAD_ARRAY_WRITE)
-                struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_WRITE, arr, id, addr, false, NULL);
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_WRITE, arr, id, address, false, NULL);
 
-                // le code est seulement le nouveau quad
+                // on ajoute ce dernier quad au code
                 $$.result = id;
-                $$.code = list_new(new_quad);
+                $$.code = list_concat($$.code, list_new(new_quad));
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
@@ -1035,68 +1137,172 @@ declaration_or_assignment:
                         exit(1);
                 }
 
-                // vérification de la validité des indices de lval
-                for (int i = 0; i < lval->int_array_value->number_of_dimensions; i++)
-                {
-                        // chaque indice doit être inférieur à la taille de la dimension correspondante
-                        if ($1->index_of_dimensions[i] >= lval->int_array_value->size_of_dimensions[i])
-                        {
-                                fprintf(stderr, "semantic error : index %d is out of range of dimension %d (size is %d) of array %s\n", 
-                                $1->index_of_dimensions[i], i, lval->int_array_value->size_of_dimensions[i], lval->identifier + 8);
-                                exit(1);
-                        }
-                }
-
-                // vérification de la validité des indices de rval
-                for (int i = 0; i < rval->int_array_value->number_of_dimensions; i++)
-                {
-                        // chaque indice doit être inférieur à la taille de la dimension correspondante
-                        if ($3->index_of_dimensions[i] >= rval->int_array_value->size_of_dimensions[i])
-                        {
-                                fprintf(stderr, "semantic error : index %d is out of range of dimension %d (size is %d) of array %s\n", 
-                                $3->index_of_dimensions[i], i, rval->int_array_value->size_of_dimensions[i], rval->identifier + 8);
-                                exit(1);
-                        }
-                }
-
                 // calcul de l'addresse de l'élément à affecter (lval)
-                int address_lval = 0;   // adresse de base
+                // il faut maintenant générer le code permettant de calculer l'adresse
                 int i;
+                struct symbol *address_lval = symbol_new_temp(&symbol_table);
+                struct symbol *address_rval = symbol_new_temp(&symbol_table);
+                struct symbol *addri = NULL;
+                struct symbol *sizeiplus1 = NULL;
+                struct symbol *inter_result = NULL;
+                struct quad *quad_addri = NULL;
+                struct quad *quad_addr_plus_addri = NULL;
+
+                /////////////////////////////////////////////////////////////
+                // Calcul de d'adresse de lval
+                /////////////////////////////////////////////////////////////
                 for (i = 0; i < lval->int_array_value->number_of_dimensions - 1; i++)
                 {
-                        address_lval += $1->index_of_dimensions[i] * lval->int_array_value->size_of_dimensions[i + 1];
-                }
-                address_lval += $1->index_of_dimensions[i];
-                address_lval = address_lval * MIPS_REGISTER_SIZE_IN_BYTES;
+                        // si l'indice est un entier on crée un nouveau temporaire contenant la valeur de l'entier
+                        // et on ajoute le produit entre la dimensions supérieure et l'entier (symbole)
+                        if (!$1->index_of_dimensions[i].is_identifier)
+                        {
+                                // génération du symbole contenant l'indice de la dimension i
+                                addri = symbol_new_temp(&symbol_table);
+                                addri->int_value = $1->index_of_dimensions[i].value;
+                                addri->is_constant = true;
+                        }
+                        // si l'indice est un identificateur on recherche cet identificateur
+                        // et on ajoute le produit entre la dimensions supérieure et ce symbole
+                        else
+                        {
+                                // recherche du symbole contenant l'indice de la dimension i
+                                addri = symbol_lookup(symbol_table, $1->index_of_dimensions[i].identifier);
+                        }
 
-                // calcul de l'addresse de la valeur à chercher (rval)
-                int address_rval = 0;   // adresse de base
+                        // génération du symbole contenant la taille de la dimension i+1
+                        sizeiplus1 = symbol_new_temp(&symbol_table);
+                        sizeiplus1->int_value = lval->int_array_value->size_of_dimensions[i + 1];
+                        sizeiplus1->is_constant = true;
+
+                        // génération d'un nouveau symbole contenant le produit de addri par sizeiplus1
+                        inter_result = symbol_new_temp(&symbol_table);
+
+                        // génération du quad de calcul de l'adresse intermédiaire
+                        quad_addri = quad_gen(&quad_list, QUAD_MULTIPLY, addri, sizeiplus1, inter_result, false, NULL);
+
+                        // ajout de ce quad au code
+                        $$.code = list_concat($$.code, list_new(quad_addri));
+
+                        // génération du quad address = address + inter_result
+                        quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address_lval, inter_result, address_lval, false, NULL);
+
+                        // ajout de ce quad au code
+                        $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));                        
+                }
+                // génération du dernier symbole contenant l'offset final
+                if ($1->index_of_dimensions[i].is_identifier)
+                {
+                        // recherche du symbole contenant l'indice de la dimension i
+                        addri = symbol_lookup(symbol_table, $1->index_of_dimensions[i].identifier);
+                }
+                else
+                {
+                        // génération du symbole contenant l'indice de la dimension i
+                        addri = symbol_new_temp(&symbol_table);
+                        addri->int_value = $1->index_of_dimensions[i].value;
+                        addri->is_constant = true;
+                }
+
+                // génération du quad address = address + addri
+                quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address_lval, addri, address_lval,false, NULL);
+
+                // ajout de ce quad au code
+                $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));   
+
+                // en dernier il faut multiplier par la taille des registres (4 bytes)
+                struct symbol *register_size = symbol_new_temp(&symbol_table);
+                register_size->int_value = MIPS_REGISTER_SIZE_IN_BYTES;
+
+                // quad de la multiplication par MIPS_REGISTER_SIZE_IN_BYTES
+                struct quad *final_address_lval = quad_gen(&quad_list, QUAD_MULTIPLY, address_lval, register_size, address_lval, false, NULL);
+
+                // ajout au code
+                $$.code = list_concat($$.code, list_new(final_address_lval));
+
+                //////////////////////////////////////////////////
+                // Calcul de l'adress de rval
+                //////////////////////////////////////////////////
                 for (i = 0; i < rval->int_array_value->number_of_dimensions - 1; i++)
                 {
-                        address_rval += $3->index_of_dimensions[i] * rval->int_array_value->size_of_dimensions[i + 1];
+                        // si l'indice est un entier on crée un nouveau temporaire contenant la valeur de l'entier
+                        // et on ajoute le produit entre la dimensions supérieure et l'entier (symbole)
+                        if (!$3->index_of_dimensions[i].is_identifier)
+                        {
+                                // génération du symbole contenant l'indice de la dimension i
+                                addri = symbol_new_temp(&symbol_table);
+                                addri->int_value = $3->index_of_dimensions[i].value;
+                                addri->is_constant = true;
+                        }
+                        // si l'indice est un identificateur on recherche cet identificateur
+                        // et on ajoute le produit entre la dimensions supérieure et ce symbole
+                        else
+                        {
+                                // recherche du symbole contenant l'indice de la dimension i
+                                addri = symbol_lookup(symbol_table, $3->index_of_dimensions[i].identifier);
+                        }
+
+                        // génération du symbole contenant la taille de la dimension i+1
+                        sizeiplus1 = symbol_new_temp(&symbol_table);
+                        sizeiplus1->int_value = rval->int_array_value->size_of_dimensions[i + 1];
+                        sizeiplus1->is_constant = true;
+
+                        // génération d'un nouveau symbole contenant le produit de addri par sizeiplus1
+                        inter_result = symbol_new_temp(&symbol_table);
+
+                        // génération du quad de calcul de l'adresse intermédiaire
+                        quad_addri = quad_gen(&quad_list, QUAD_MULTIPLY, addri, sizeiplus1, inter_result, false, NULL);
+
+                        // ajout de ce quad au code
+                        $$.code = list_concat($$.code, list_new(quad_addri));
+
+                        // génération du quad address = address + inter_result
+                        quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address_rval, inter_result, address_rval, false, NULL);
+
+                        // ajout de ce quad au code
+                        $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));                        
                 }
-                address_rval += $3->index_of_dimensions[i];
-                address_rval = address_rval * MIPS_REGISTER_SIZE_IN_BYTES;
+                // génération du dernier symbole contenant l'offset final
+                if ($3->index_of_dimensions[i].is_identifier)
+                {
+                        // recherche du symbole contenant l'indice de la dimension i
+                        addri = symbol_lookup(symbol_table, $3->index_of_dimensions[i].identifier);
+                }
+                else
+                {
+                        // génération du symbole contenant l'indice "["([0-9]|([1-9][0-9]*))|([a-z_][a-zA-Z_0-9]*)"]")+de la dimension i
+                        addri = symbol_new_temp(&symbol_table);
+                        addri->int_value = $3->index_of_dimensions[i].value;
+                        addri->is_constant = true;
+                }
 
-                // ajout d'un nouveau temporaire contenant la valeur de l'adresse d'accès dans lval
-                struct symbol *addr_lval = symbol_new_temp(&symbol_table);
-                addr_lval->int_value = address_lval;
+                // génération du quad address = address + addri
+                quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address_rval, addri, address_rval, false, NULL);
 
-                // ajout d'un nouveau temporaire contenant la valeur de l'adresse d'accès dans rval
-                struct symbol *addr_rval = symbol_new_temp(&symbol_table);
-                addr_rval->int_value = address_rval;
+                // ajout de ce quad au code
+                $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));   
 
-                // ajout d'un nouveau temporaire contenant le résultat de l'affectation temp = rval[addr_rval]
+                // quad de la multiplication par MIPS_REGISTER_SIZE_IN_BYTES
+                struct quad *final_address_rval = quad_gen(&quad_list, QUAD_MULTIPLY, address_rval, register_size, address_rval, false, NULL);
+
+                // ajout au code
+                $$.code = list_concat($$.code, list_new(final_address_rval));
+
+                //////////////////////////////////////////////////
+                // Quad des accès finaux
+                //////////////////////////////////////////////////
+
+                // génération d'un nouveau temporaire contenant la valeur de rval[address_rval]
                 struct symbol *temp = symbol_new_temp(&symbol_table);
 
-                // génération du quad temp = rval[addr_rval]
-                struct quad *assign_temp_rval = quad_gen(&quad_list, QUAD_ARRAY_READ, temp, rval, addr_rval, false, NULL);
+                // génération du quad (QUAD_ARRAY_READ)
+                struct quad *quad_read = quad_gen(&quad_list, QUAD_ARRAY_READ, temp, rval, address_rval, false, NULL);
 
-                // génération du quad lval[addr_lval] = temp
-                struct quad *assign_lval_temp = quad_gen(&quad_list, QUAD_ARRAY_WRITE, lval, temp, addr_lval, false, NULL);
+                // génération du quad (QUAD_ARRAY_WRITE)
+                struct quad *quad_write = quad_gen(&quad_list, QUAD_ARRAY_WRITE, lval, temp, address_lval, false, NULL);
 
                 // le code est la concaténation de ces deux quads
-                $$.code = list_concat(list_new(assign_temp_rval), list_new(assign_lval_temp));
+                $$.code = list_concat($$.code, list_concat(list_new(quad_read), list_new(quad_write)));
                 $$.result = temp;
                 $$.truelist = NULL;
                 $$.falselist = NULL;
@@ -1118,38 +1324,89 @@ declaration_or_assignment:
                 // maintenant le tableau est affecté (qu'il l'est été ou non)
                 arr->is_set = true;
 
-                // vérification de la validité des indices
-                for (int i = 0; i < arr->int_array_value->number_of_dimensions; i++)
-                {
-                        // chaque indice doit être inférieur à la taile de la dimension correspondante
-                        if ($1->index_of_dimensions[i] >= arr->int_array_value->size_of_dimensions[i])
-                        {
-                                fprintf(stderr, "semantic error : cannot access index %d of array %s which exceeds size the size of its dimension which is %d\n", 
-                                $1->index_of_dimensions[i], arr->identifier + 8, arr->int_array_value->size_of_dimensions[i]);
-                                exit(1);
-                        }
-                }
-
-                // calcul de l'adresse de l'élément à accéder
-                int address = 0;
-                int i = 0;
+                // il faut maintenant générer le code permettant de calculer l'adresse
+                int i;
+                struct symbol *address = symbol_new_temp(&symbol_table);
+                struct symbol *addri = NULL;
+                struct symbol *sizeiplus1 = NULL;
+                struct symbol *inter_result = NULL;
+                struct quad *quad_addri = NULL;
+                struct quad *quad_addr_plus_addri = NULL;
                 for (i = 0; i < arr->int_array_value->number_of_dimensions - 1; i++)
                 {
-                        address += arr->int_array_value->size_of_dimensions[i] * $1->index_of_dimensions[i];
-                }
-                address += $1->index_of_dimensions[i];
-                address = address * MIPS_REGISTER_SIZE_IN_BYTES;
+                        // si l'indice est un entier on crée un nouveau temporaire contenant la valeur de l'entier
+                        // et on ajoute le produit entre la dimensions supérieure et l'entier (symbole)
+                        if (!$1->index_of_dimensions[i].is_identifier)
+                        {
+                                // génération du symbole contenant l'indice de la dimension i
+                                addri = symbol_new_temp(&symbol_table);
+                                addri->int_value = $1->index_of_dimensions[i].value;
+                                addri->is_constant = true;
+                        }
+                        // si l'indice est un identificateur on recherche cet identificateur
+                        // et on ajoute le produit entre la dimensions supérieure et ce symbole
+                        else
+                        {
+                                // recherche du symbole contenant l'indice de la dimension i
+                                addri = symbol_lookup(symbol_table, $1->index_of_dimensions[i].identifier);
+                        }
 
-                // ajout d'un nouveau symbole contenant l'addresse
-                struct symbol *addr = symbol_new_temp(&symbol_table);
-                addr->int_value = address;
+                        // génération du symbole contenant la taille de la dimension i+1
+                        sizeiplus1 = symbol_new_temp(&symbol_table);
+                        sizeiplus1->int_value = arr->int_array_value->size_of_dimensions[i + 1];
+                        sizeiplus1->is_constant = true;
+
+                        // génération d'un nouveau symbole contenant le produit de addri par sizeiplus1
+                        inter_result = symbol_new_temp(&symbol_table);
+
+                        // génération du quad de calcul de l'adresse intermédiaire
+                        quad_addri = quad_gen(&quad_list, QUAD_MULTIPLY, addri, sizeiplus1, inter_result, false, NULL);
+
+                        // ajout de ce quad au code
+                        $$.code = list_concat($$.code, list_new(quad_addri));
+
+                        // génération du quad address = address + inter_result
+                        quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, address, inter_result, false, NULL);
+
+                        // ajout de ce quad au code
+                        $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));                        
+                }
+                // génération du dernier symbole contenant l'offset final
+                if ($1->index_of_dimensions[i].is_identifier)
+                {
+                        // recherche du symbole contenant l'indice de la dimension i
+                        addri = symbol_lookup(symbol_table, $1->index_of_dimensions[i].identifier);
+                }
+                else
+                {
+                        // génération du symbole contenant l'indice de la dimension i
+                        addri = symbol_new_temp(&symbol_table);
+                        addri->int_value = $1->index_of_dimensions[i].value;
+                        addri->is_constant = true;
+                }
+
+                // génération du quad address = address + addri
+                quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, address, addri, false, NULL);
+
+                // ajout de ce quad au code
+                $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));   
+
+                // en dernier il faut multiplier par la taille des registres (4 bytes)
+                struct symbol *register_size = symbol_new_temp(&symbol_table);
+                register_size->int_value = MIPS_REGISTER_SIZE_IN_BYTES;
+
+                // quad de la multiplication par MIPS_REGISTER_SIZE_IN_BYTES
+                struct quad *final_address = quad_gen(&quad_list, QUAD_MULTIPLY, address, register_size, address, false, NULL);
+
+                // ajout au code
+                $$.code = list_concat($$.code, list_new(final_address));
 
                 // génération du quad (QUAD_ARRAY_WRITE)
-                struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_WRITE, arr, id, addr, false, NULL);
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_READ, arr, id, address, false, NULL);
 
                 // le code est juste le nouveau quad
                 $$.result = id;
-                $$.code = list_new(new_quad);
+                $$.code = list_concat($$.code, list_new(new_quad));
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
@@ -1181,6 +1438,7 @@ declaration_or_assignment:
 		struct symbol *id = symbol_lookup(symbol_table, $2);
 
                 // génération d'un quad codant l'affectation
+                printf("ASSIGNMENT %s = %s\n", id->identifier, $4.result->identifier);
 		struct quad *new_quad = quad_gen(&quad_list, QUAD_ASSIGNMENT, id, $4.result, NULL, false, NULL);
                 
                 // maintenant l'id est déclaré et initialisé
@@ -1216,6 +1474,9 @@ declaration_or_assignment:
                 // l'id est initialisé
                 id->is_set = true;
 
+                // DEBUG
+                array_parser_print($4);
+
                 // vérification de la taille des tableaux (ndim de l'id = ndim de la référence)
                 if (arr->int_array_value->number_of_dimensions != $4->number_of_dimensions)
                 {
@@ -1224,38 +1485,93 @@ declaration_or_assignment:
                         exit(1);
                 }
 
-                // vérification de la validité des indices
-                for (int i = 0; i < arr->int_array_value->number_of_dimensions; i++)
-                {
-                        // chaque indice doit être inférieur à la taile de la dimension correspondante
-                        if ($4->index_of_dimensions[i] >= arr->int_array_value->size_of_dimensions[i])
-                        {
-                                fprintf(stderr, "semantic error : cannot access index %d of array %s which exceeds size the size of its dimension which is %d\n", 
-                                $4->index_of_dimensions[i], arr->identifier + 8, arr->int_array_value->size_of_dimensions[i]);
-                                exit(1);
-                        }
-                }
-
-                // calcul de l'adresse de l'élément à accéder
-                int address = 0;
-                int i = 0;
+                // il faut maintenant générer le code permettant de calculer l'adresse
+                int i;
+                struct symbol *address = symbol_new_temp(&symbol_table);
+                struct symbol *addri = NULL;
+                struct symbol *sizeiplus1 = NULL;
+                struct symbol *inter_result = NULL;
+                struct quad *quad_addri = NULL;
+                struct quad *quad_addr_plus_addri = NULL;
                 for (i = 0; i < arr->int_array_value->number_of_dimensions - 1; i++)
                 {
-                        address += arr->int_array_value->size_of_dimensions[i] * $4->index_of_dimensions[i];
+                        // si l'indice est un entier on crée un nouveau temporaire contenant la valeur de l'entier
+                        // et on ajoute le produit entre la dimensions supérieure et l'entier (symbole)
+                        if (!$4->index_of_dimensions[i].is_identifier)
+                        {
+                                // génération du symbole contenant l'indice de la dimension i
+                                addri = symbol_new_temp(&symbol_table);
+                                addri->int_value = $4->index_of_dimensions[i].value;
+                                addri->is_constant = true;
+                        }
+                        // si l'indice est un identificateur on recherche cet identificateur
+                        // et on ajoute le produit entre la dimensions supérieure et ce symbole
+                        else
+                        {
+                                // recherche du symbole contenant l'indice de la dimension i
+                                addri = symbol_lookup(symbol_table, $4->index_of_dimensions[i].identifier);
+                        }
+
+                        // génération du symbole contenant la taille de la dimension i+1
+                        sizeiplus1 = symbol_new_temp(&symbol_table);
+                        sizeiplus1->int_value = arr->int_array_value->size_of_dimensions[i + 1];
+                        sizeiplus1->is_constant = true;
+
+                        // génération d'un nouveau symbole contenant le produit de addri par sizeiplus1
+                        inter_result = symbol_new_temp(&symbol_table);
+
+                        // génération du quad de calcul de l'adresse intermédiaire
+                        quad_addri = quad_gen(&quad_list, QUAD_MULTIPLY, addri, sizeiplus1, inter_result, false, NULL);
+
+                        // ajout de ce quad au code
+                        $$.code = list_concat($$.code, list_new(quad_addri));
+
+                        // génération du quad address = address + inter_result
+                        quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, address, inter_result, false, NULL);
+
+                        // ajout de ce quad au code
+                        $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));                        
                 }
-                address += $4->index_of_dimensions[i];
-                address = address * MIPS_REGISTER_SIZE_IN_BYTES;
+                // génération du dernier symbole contenant l'offset final
+                if ($4->index_of_dimensions[i].is_identifier)
+                {
+                        // recherche du symbole contenant l'indice de la dimension i
+                        addri = symbol_lookup(symbol_table, $4->index_of_dimensions[i].identifier);
+                }
+                else
+                {
+                        // génération du symbole contenant l'indice de la dimension i
+                        addri = symbol_new_temp(&symbol_table);
+                        addri->int_value = $4->index_of_dimensions[i].value;
+                        addri->is_constant = true;
+                        printf("addri = %d\n", $4->index_of_dimensions[i].value);
+                }
 
-                // ajout d'un nouveau symbole contenant l'addresse
-                struct symbol *addr = symbol_new_temp(&symbol_table);
-                addr->int_value = address;
+                // génération du quad address = address + addri
+                quad_addr_plus_addri = quad_gen(&quad_list, QUAD_PLUS, address, addri, address, false, NULL);
+                printf("address(%d) = address(%d) + addri(%d)\n", address->int_value, address->int_value, addri->int_value);
 
-                // génération du quad (QUAD_ARRAY_READ)
-                struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_READ, id, arr, addr, false, NULL);
+                // ajout de ce quad au code
+                $$.code = list_concat($$.code, list_new(quad_addr_plus_addri));   
+
+                // en dernier il faut multiplier par la taille des registres (4 bytes)
+                struct symbol *register_size = symbol_new_temp(&symbol_table);
+                register_size->int_value = MIPS_REGISTER_SIZE_IN_BYTES;
+                printf("register_size = %d\n", MIPS_REGISTER_SIZE_IN_BYTES);
+
+                // quad de la multiplication par MIPS_REGISTER_SIZE_IN_BYTES
+                struct quad *final_address = quad_gen(&quad_list, QUAD_MULTIPLY, address, register_size, address, false, NULL);
+                printf("address(%d) = address(%d) * register_size(%d)\n", address->int_value, address->int_value, register_size->int_value);
+
+                // ajout au code
+                $$.code = list_concat($$.code, list_new(final_address));
+
+                // génération du quad (QUAD_ARRAU_READ)
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_ARRAY_READ, id, arr, address, false, NULL);
 
                 // le code est juste le nouveau quad
                 $$.result = id;
-                $$.code = list_new(new_quad);
+                $$.code = list_concat($$.code, list_new(new_quad));
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.nextlist = NULL;
