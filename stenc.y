@@ -119,6 +119,8 @@ main_func:
 		$$.falselist = NULL;
 		$$.nextlist = NULL;
                 $$.array_value = NULL;
+		if ($4.nextlist != NULL)
+			list_complete_to_end($4.nextlist);
 	}
 	| TYPE_INT MAIN LEFT_BRACE RETURN statement RIGHT_BRACE
 	{
@@ -695,6 +697,9 @@ expression:
         }
         | MINUS expression
         {
+		if (_verbose_output)
+			printf("expression -> MINUS expression\n");
+
                 // on génère un nouveau temporaire
                 struct symbol *res = symbol_new_temp(&symbol_table);
 

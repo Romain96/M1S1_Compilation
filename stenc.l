@@ -17,7 +17,7 @@ comment			([/][*][^*]*[*]+([^*/][^*]*[*]+)*[/])|("//".*)
 error_comment       	[/][*]
 int_array           	"{"[{},0-9\- ]*"}"
 integer             	([0-9]|([1-9][0-9]*))
-array_reference     	[a-z_][a-zA-Z_]*("["[^ =;]"]")+
+array_reference     	[a-z_][a-zA-Z_0-9]*("["[^ =;]"]")+
 identifier          	[a-z_][a-zA-Z_0-9]*
 string              	["][^\"]*["]
 
