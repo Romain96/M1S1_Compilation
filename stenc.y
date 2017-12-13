@@ -46,6 +46,7 @@
                 struct list *falselist;
                 struct list *nextlist;
                 struct stenc_array *array_value;
+		bool contain_block;
         }gencode;
 }
 
@@ -141,17 +142,35 @@ statement_list:
 
                 $$.result = $1.result;
                 $$.code = list_concat($1.code, $2.code);
-                if ($1.code != NULL && $2.code != NULL)
+
+		if ($1.code != NULL && $2.code != NULL && $1.contain_block && $2.contain_block)
+		{
+			quad_label($2.code->current_quad);
+                        list_complete($1.nextlist, $2.code->current_quad->label_name);
+                        list_complete_to_end($2.nextlist);
+			$$.nextlist = $2.nextlist;
+			$$.contain_block = true;
+		}
+                else if ($1.code != NULL && $2.code != NULL && $1.contain_block)
                 {
                         quad_label($2.code->current_quad);
                         list_complete($1.nextlist, $2.code->current_quad->label_name);
-                        list_complete_to_end($2.nextlist);
+			$$.nextlist = NULL;
+			$$.contain_block = false;
                 }
+		else if ($1.code != NULL && $2.code != NULL && $2.contain_block)
+		{
+			$$.nextlist = $2.nextlist;
+			$$.contain_block = true;
+		}
+		else
+		{
+			$$.contain_block = false;
+			$$.nextlist = list_concat($1.nextlist, $2.nextlist);
+		}
 
-                // les nouvelles listes sont vides
                 $$.truelist = NULL;
                 $$.falselist = NULL;
-                $$.nextlist = NULL;
                 $$.array_value = NULL;
         }
         | statement
@@ -161,13 +180,16 @@ statement_list:
 
                 $$.result = $1.result;
                 $$.code = $1.code;
-                list_complete_to_end($1.nextlist);
+		if ($1.contain_block)
+		{
+			list_complete_to_end($1.nextlist);
+		}
 
-                // les nouvelles listes sont vides
                 $$.truelist = NULL;
                 $$.falselist = NULL;
                 $$.array_value = NULL;
-                $$.nextlist = NULL;
+                $$.nextlist = $1.nextlist;
+		$$.contain_block = false;
         }
         ;
 
@@ -183,6 +205,7 @@ statement:
                 $$.falselist = $1.falselist;
                 $$.nextlist = $1.nextlist;
                 $$.array_value = NULL;
+		$$.contain_block = false;
 	}
         | control_struct
         {
@@ -195,6 +218,7 @@ statement:
                 $$.falselist = $1.falselist;
                 $$.nextlist = $1.nextlist;
                 $$.array_value = NULL;
+		$$.contain_block = true;
         }
         ;
 
@@ -656,7 +680,7 @@ expression:
                 $$.nextlist = NULL;
                 $$.array_value = NULL;
         }
-        | '(' expression ')'
+        | LEFT_ROUND_BRACKET expression RIGHT_ROUND_BRACKET
         {
                 if (_verbose_output)
                         printf("expression -> ( expression )\n");
@@ -671,38 +695,11 @@ expression:
         }
         | MINUS expression
         {
-                // on recherche l'id
-                struct symbol *id = symbol_lookup(symbol_table, $2.result->identifier);
-
-                // l'id doit être déclaré
-                if (!id->is_declared)
-                {
-                        fprintf(stderr, "semantic error : %s hasn't been declared previously\n", id->identifier+8);
-                        exit(1);
-                }
-                // et déjà initialisé
-                if (!id->is_set)
-                {
-                        fprintf(stderr, "semantic error : %s hasn't been initialized previously\n", id->identifier+8);
-                        exit(1);
-                }
-                // et aussi être un entier (pas un int_array ou une string_litteral)
-                if (id->is_string_litteral)
-                {
-                        fprintf(stderr, "semantic error : cannot increment or decrement the string litteral variable %s\n", id->identifier+8);
-                        exit(1);
-                }
-                if (id->is_int_array)
-                {
-                        fprintf(stderr, "semantic error : cannot increment or decrement the integer array variable %s\n", id->identifier+8);
-                        exit(1);
-                }
-
                 // on génère un nouveau temporaire
                 struct symbol *res = symbol_new_temp(&symbol_table);
 
                 // on génère le quad de la négation
-                struct quad *new_quad = quad_gen(&quad_list, QUAD_NEG, id, NULL, res, false, NULL);
+                struct quad *new_quad = quad_gen(&quad_list, QUAD_NEG, $2.result, NULL, res, false, NULL);
 
                 // le code est la concaténation du code de l'expression et du nouveau quad
                 $$.code = list_concat($2.code, list_new(new_quad));
@@ -1784,7 +1781,7 @@ condition:
                 struct symbol *id = symbol_lookup(symbol_table, $1);
 
                 // génération du goto conditionnel : if ID goto ?
-                struct quad *new_quad_true = quad_gen(&quad_list, QUAD_NO_OP, id, NULL, NULL, true, NULL);
+                struct quad *new_quad_true = quad_gen(&quad_list, QUAD_NZ, id, NULL, NULL, true, NULL);
 
                 // génération du goto inconditionnel : goto ?
                 struct quad *new_quad_false = quad_gen(&quad_list, QUAD_NO_OP, NULL, NULL, NULL, true, NULL);

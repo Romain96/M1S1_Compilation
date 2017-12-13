@@ -16,7 +16,7 @@ Outils :
 - (f)lex : générateur d'analyseur lexical
 - Yacc : générateur d'analyseur syntaxique
 - R2000 SPIM : simulateur de programmes MIPS32
-- 
+
 Auteurs :
 - BANZAN-WONG Juan-Andres
 - PERRIN Romain

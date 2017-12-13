@@ -117,6 +117,8 @@ void quad_print(struct quad *quad_list)
 				printf(">=, "); break;
 			case QUAD_LE:
 				printf("<=, "); break;
+			case QUAD_NZ:
+				printf("!= 0, "); break;
 			case QUAD_ASSIGNMENT:
 				printf("=, "); break;
 			case QUAD_PRINTF:

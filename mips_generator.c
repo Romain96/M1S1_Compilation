@@ -480,7 +480,7 @@ void __mips_generate_goto(struct mips_generator *mips, struct quad *q)
         {
                 // génération du goto label (b label_name)
                 snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "b %s\n", q->goto_quad);
-                fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+                fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);	
         }
         // sinon on génère la comparaison nécessaire puis le goto
         else
@@ -505,6 +505,9 @@ void __mips_generate_goto(struct mips_generator *mips, struct quad *q)
                         case QUAD_LE:
                                 __mips_generate_boolean_le(mips, q);
                                 break;
+			case QUAD_NZ:
+				__mips_generate_boolean_nz(mips, q);
+				break;
                         default:
                                 fprintf(stderr, "quad is not supposed to be here...\n");
                                 exit(EXIT_FAILURE);
@@ -657,6 +660,26 @@ void __mips_generate_boolean_le(struct mips_generator *mips, struct quad *q)
 
         // 3) génère un saut conditionnel (bgt $t1, $t2, label)   
         snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "ble $t1, $t2, %s\n", q->goto_quad);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+}
+
+// Fonction             : __mips_generate_boolean_nz
+// Argument(s)          : - mips : une structure mips_generator générée par mips_setup
+//                        - quad : le quad contenant la repésentation de l'instruction à générer
+// Valeur de retour     : /
+// Pré-condition(s)     : /
+// Post-condition(s)    : /
+// Commentaire(s)       : génère le code MIPS d'une comparaison de type not zero
+void __mips_generate_boolean_nz(struct mips_generator *mips, struct quad *q)
+{
+        char line_to_write[MIPS_MAX_LINE_SIZE];
+
+        // 1) placer la valeur de arg1 dans le registre $t1
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "lw $t1, %s\n", q->arg1->identifier);
+        fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
+
+        // 3) génère un saut conditionnel (bne $t1, $0, label)   
+        snprintf(line_to_write, MIPS_MAX_LINE_SIZE, "bne $t1, $0, %s\n", q->goto_quad);
         fwrite(line_to_write, sizeof(char), strlen(line_to_write), mips->output_file);
 }
 
